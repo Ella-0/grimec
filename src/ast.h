@@ -16,6 +16,7 @@ enum BuildinTypeType {
 };
 
 struct BuildinType {
+	struct Type base;
 	enum BuildinTypeType type;
 };
 
@@ -38,21 +39,21 @@ enum LiteralType {
 };
 
 struct LiteralExpr {
-	struct Expr *base;
+	struct Expr base;
 	enum LiteralType type;
 };
 
 struct NullLiteral {
-	struct LiteralExpr *base;
+	struct LiteralExpr base;
 };
 
 struct IntLiteral {
-	struct LiteralExpr *base;
+	struct LiteralExpr base;
 	int val;
 };
 
 struct BoolLiteral {
-	struct LiteralExpr *base;
+	struct LiteralExpr base;
 	int val;
 };
 
@@ -61,7 +62,7 @@ enum UnaryOp {
 };
 
 struct UnaryExpr {
-	struct Expr *base;
+	struct Expr base;
 	enum UnaryOp op;
 	struct Expr *rhs;
 };
@@ -71,7 +72,7 @@ enum BinaryOp {
 };
 
 struct BinaryExpr {
-	struct Expr *base;
+	struct Expr base;
 	struct Expr *lhs;
 	enum BinaryOp op;
 	struct Expr *rhs;
@@ -89,18 +90,18 @@ struct Stmt {
 };
 
 struct VarStmt {
-	struct Stmt *base;
+	struct Stmt base;
 	struct Var *var;
 	struct Expr *init;
 };
 
 struct ExprStmt {
-	struct Stmt *base;
+	struct Stmt base;
 	struct Expr *expr;
 };
 
 struct BlockStmt {
-	struct Stmt *base;
+	struct Stmt base;
 	unsigned int stmtCount;
 	struct Stmt **stmts;
 };
