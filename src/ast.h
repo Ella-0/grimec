@@ -12,7 +12,7 @@ struct Type {
 };
 
 enum BuildinTypeType {
-	INT,
+	INT_BUILDIN_TYPE,
 };
 
 struct BuildinType {
