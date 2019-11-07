@@ -14,8 +14,20 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 			}
 			break;
 		default:
-			fprintf(stderr, "Error: Invalid Type");
+			fprintf(stderr, "Error: Invalid Type!");
 			exit(-1);
+	}
+}
+
+LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Stmt *stmt) {
+	switch (stmt->type) {
+		case EXPR_STMT:
+			printf("expr\n");
+			return NULL;
+		default:
+			fprintf(stderr, "Error: Invalid Statement Type!");
+			exit(-1);
+
 	}
 }
 
