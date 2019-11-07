@@ -114,3 +114,9 @@ struct Func {
 	struct Type *retType;
 	struct Stmt *body;
 };
+
+struct Module {
+	const char *name;
+	unsigned int funcCount;
+	struct Func **funcs;
+};

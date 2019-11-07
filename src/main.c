@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "ast.h"
-
+#include "code-gen/llvm/llvm-code-gen.h"
 
 int main() {
 	struct Func test;
@@ -19,10 +18,20 @@ int main() {
 	body.base.type = EXPR_STMT;
 	body.expr = &expr.base.base;
 
-	test.name = "xyz.grime.example";
+	test.name = "xyz.grime.example.main";
 	test.paramCount = 0;
 	test.params = NULL;
 	test.retType = &retType.base;
 	test.body = &body.base;
+
+	struct Func *testp = &test;
+
+	struct Module module;
+	module.name = "xyz.grime.example";
+	module.funcCount = 1;
+	module.funcs = &testp;
+
+	codeGenLLVM(&module);
+
 	return 0;
 }
