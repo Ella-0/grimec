@@ -19,11 +19,42 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 	}
 }
 
+LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *lit) {
+	return LLVMConstInt(LLVMIntType(32), lit->val, false);
+}
+
+LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *expr) {
+	switch (expr->type) {
+		case INT_LITERAL:
+			codeGenIntLiteralLLVM(builder, (struct IntLiteral *) expr);
+			return NULL;
+		default:
+			fprintf(stderr, "Error: Invalid Expr Type!");
+			exit(-1);
+	}
+}
+
+LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr) {
+	switch (expr->type) {
+		case LITERAL_EXPR:
+			return codeGenLiteralExprLLVM(builder, (struct LiteralExpr *) expr);
+		default:
+			fprintf(stderr, "Error: Invalid Expr Type!");
+			exit(-1);
+	}
+}
+
+LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct ExprStmt *stmt) {
+	return codeGenExprLLVM(builder, stmt->expr);
+}
+
 LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Stmt *stmt) {
 	switch (stmt->type) {
-		case EXPR_STMT:
-			printf("expr\n");
+		case VAR_STMT:
+			printf("var");
 			return NULL;
+		case EXPR_STMT:
+			return codeGenExprStmtLLVM(builder, (struct ExprStmt *) stmt);
 		default:
 			fprintf(stderr, "Error: Invalid Statement Type!");
 			exit(-1);
@@ -42,6 +73,10 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 	LLVMTypeRef retType = codeGenTypeLLVM(module, func->retType);
 
 	out = LLVMAddFunction(module, func->name, LLVMFunctionType(retType, paramTypes, func->paramCount, false));
+	LLVMBuilderRef builder = LLVMCreateBuilder();
+	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
+	LLVMPositionBuilderAtEnd(builder, entry);
+	codeGenStmtLLVM(builder, func->body);
 	return out;
 }
 
