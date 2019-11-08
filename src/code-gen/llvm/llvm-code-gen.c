@@ -1,7 +1,8 @@
 #include <stdlib.h>
-#include <stdio.h> //TODO Logging
+#include <stdio.h>
 #include <stdbool.h>
 #include <llvm-c/Core.h>
+#include "../../log.h"
 #include "llvm-code-gen.h"
 
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
@@ -14,7 +15,7 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 			}
 			break;
 		default:
-			fprintf(stderr, "Error: Invalid Type!");
+			logMsg(LOG_ERROR, "Invalid Type!");
 			exit(-1);
 	}
 }
@@ -46,6 +47,10 @@ LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr) {
 
 LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct ExprStmt *stmt) {
 	return codeGenExprLLVM(builder, stmt->expr);
+}
+
+LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct VarStmt *stmt) {
+
 }
 
 LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Stmt *stmt) {
