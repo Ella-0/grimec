@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <llvm-c/Core.h>
 #include "../../log.h"
+#include "llvm-symbols.h"
 #include "llvm-code-gen.h"
 
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
@@ -50,7 +51,7 @@ LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct ExprStmt *stmt) 
 }
 
 LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct VarStmt *stmt) {
-
+	
 }
 
 LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Stmt *stmt) {

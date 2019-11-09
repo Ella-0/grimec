@@ -10,13 +10,13 @@
 void logMsg(enum LogLevel level, const char *msg) {
 	switch (level) {
 		case LOG_INFO:
-			fprintf(stderr, INFO_COLOUR "Info: " NORMAL "%s\n", msg);
+			fprintf(stderr, "grimec: " INFO_COLOUR "Info: " NORMAL "%s\n", msg);
 			break;
 		case LOG_WARNING:
-			fprintf(stderr, WARNING_COLOUR "Warning: " NORMAL "%s\n", msg);
+			fprintf(stderr, "grimec: " WARNING_COLOUR "Warning: " NORMAL "%s\n", msg);
 			break;
 		case LOG_ERROR:
-			fprintf(stderr, ERROR_COLOUR "Error: " NORMAL "%s\n", msg);
+			fprintf(stderr, "grimec: " ERROR_COLOUR "Error: " NORMAL "%s\n", msg);
 			break;
 		default:
 			logMsg(LOG_ERROR, "Invalid Log Level!");
