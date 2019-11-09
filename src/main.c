@@ -14,11 +14,11 @@ int main() {
 	expr.base.type = INT_LITERAL;
 	expr.val = 1;
 
-	struct ExprStmt body;
-	body.base.type = EXPR_STMT;
-	body.expr = &expr.base.base;
+	struct NullStmt body;
+	body.base.type = NULL_STMT;
+	//body.expr = &expr.base.base;
 
-	test.name = "xyz.grime.example.main";
+	test.name = "xyz_grime_example_main";
 	test.paramCount = 0;
 	test.params = NULL;
 	test.retType = &retType.base;

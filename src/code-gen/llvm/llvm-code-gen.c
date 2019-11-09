@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <llvm-c/Core.h>
-#include "../../log.h"
-#include "llvm-symbols.h"
+#include "../../util/log.h"
+#include "../../util/tree.h"
 #include "llvm-code-gen.h"
 
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
@@ -50,16 +50,27 @@ LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct ExprStmt *stmt) 
 	return codeGenExprLLVM(builder, stmt->expr);
 }
 
-LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct VarStmt *stmt) {
-	
+LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbols, struct VarStmt *stmt) {
+	LLVMValueRef rhs = codeGenExprLLVM(builder, stmt->init);
+	*localVarSymbols = treeAdd(*localVarSymbols, stmt->var->name, rhs);
+	return rhs; 
 }
 
-LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Stmt *stmt) {
+LLVMValueRef codeGenNullStmtLLVM(LLVMBuilderRef builder, struct NullStmt *stmt) {
+	return LLVMBuildRet(builder, LLVMBuildAdd(builder, LLVMConstInt(LLVMIntType(32), 0, false), LLVMConstInt(LLVMIntType(32), 0, false), "no-op"));
+}
+
+LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbols, struct Stmt *stmt) {
 	switch (stmt->type) {
+		case NULL_STMT:
+			logMsg(LOG_INFO, "Building Null Statement!");
+			return codeGenNullStmtLLVM(builder, (struct NullStmt *) stmt);
 		case VAR_STMT:
-			printf("var");
+			logMsg(LOG_INFO, "Building Var Statement!");
+			codeGenVarStmtLLVM(builder, localVarSymbols, (struct VarStmt *) stmt);
 			return NULL;
 		case EXPR_STMT:
+			logMsg(LOG_INFO, "Building Expr Statement!");
 			return codeGenExprStmtLLVM(builder, (struct ExprStmt *) stmt);
 		default:
 			fprintf(stderr, "Error: Invalid Statement Type!");
@@ -82,7 +93,10 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
-	codeGenStmtLLVM(builder, func->body);
+
+	struct Tree *localVarSymbols = treeCreate();
+
+	codeGenStmtLLVM(builder, &localVarSymbols, func->body);
 	return out;
 }
 

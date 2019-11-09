@@ -89,6 +89,10 @@ struct Stmt {
 	enum StmtType type;
 };
 
+struct NullStmt {
+	struct Stmt base;
+};
+
 struct VarStmt {
 	struct Stmt base;
 	struct Var *var;
