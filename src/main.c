@@ -14,9 +14,14 @@ int main() {
 	expr.base.type = INT_LITERAL;
 	expr.val = 1;
 
-	struct NullStmt body;
-	body.base.type = NULL_STMT;
-	//body.expr = &expr.base.base;
+	struct Var var;
+	var.type = &retType.base;
+	var.name = "ret";
+
+	struct AssignStmt body;
+	body.base.type = ASSIGN_STMT;
+	body.var = &var;
+	body.init = &expr.base.base;
 
 	test.name = "xyz_grime_example_main";
 	test.paramCount = 0;
@@ -27,7 +32,7 @@ int main() {
 	struct Func *testp = &test;
 
 	struct Module module;
-	module.name = "xyz.grime.example";
+	module.name = "xyz_grime_example";
 	module.funcCount = 1;
 	module.funcs = &testp;
 

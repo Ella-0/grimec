@@ -81,6 +81,7 @@ struct BinaryExpr {
 enum StmtType {
 	NULL_STMT,
 	VAR_STMT,
+	ASSIGN_STMT,
 	EXPR_STMT,
 	BLOCK_STMT,
 };
@@ -94,6 +95,12 @@ struct NullStmt {
 };
 
 struct VarStmt {
+	struct Stmt base;
+	struct Var *var;
+	struct Expr *init;
+};
+
+struct AssignStmt {
 	struct Stmt base;
 	struct Var *var;
 	struct Expr *init;

@@ -28,10 +28,9 @@ LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *li
 LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *expr) {
 	switch (expr->type) {
 		case INT_LITERAL:
-			codeGenIntLiteralLLVM(builder, (struct IntLiteral *) expr);
-			return NULL;
+			return codeGenIntLiteralLLVM(builder, (struct IntLiteral *) expr);
 		default:
-			fprintf(stderr, "Error: Invalid Expr Type!");
+			logMsg(LOG_ERROR, "Invalid Literal Type!");
 			exit(-1);
 	}
 }
@@ -39,9 +38,10 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *
 LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr) {
 	switch (expr->type) {
 		case LITERAL_EXPR:
+			logMsg(LOG_INFO, "Building Literal Expression!");
 			return codeGenLiteralExprLLVM(builder, (struct LiteralExpr *) expr);
 		default:
-			fprintf(stderr, "Error: Invalid Expr Type!");
+			logMsg(LOG_ERROR, "Invalid Expression Type!");
 			exit(-1);
 	}
 }
@@ -56,6 +56,12 @@ LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSy
 	return rhs; 
 }
 
+LLVMValueRef codeGenAssignStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbols, struct AssignStmt *stmt) {
+	LLVMValueRef rhs = codeGenExprLLVM(builder, stmt->init);
+	*localVarSymbols = treeAdd(*localVarSymbols, stmt->var->name, rhs);
+	return rhs;
+}
+
 LLVMValueRef codeGenNullStmtLLVM(LLVMBuilderRef builder, struct NullStmt *stmt) {
 	return LLVMBuildRet(builder, LLVMBuildAdd(builder, LLVMConstInt(LLVMIntType(32), 0, false), LLVMConstInt(LLVMIntType(32), 0, false), "no-op"));
 }
@@ -67,13 +73,15 @@ LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbo
 			return codeGenNullStmtLLVM(builder, (struct NullStmt *) stmt);
 		case VAR_STMT:
 			logMsg(LOG_INFO, "Building Var Statement!");
-			codeGenVarStmtLLVM(builder, localVarSymbols, (struct VarStmt *) stmt);
-			return NULL;
+			return codeGenVarStmtLLVM(builder, localVarSymbols, (struct VarStmt *) stmt);
+		case ASSIGN_STMT:
+			logMsg(LOG_INFO, "Building Assign Statement!");
+			return codeGenAssignStmtLLVM(builder, localVarSymbols, (struct AssignStmt *) stmt);
 		case EXPR_STMT:
 			logMsg(LOG_INFO, "Building Expr Statement!");
 			return codeGenExprStmtLLVM(builder, (struct ExprStmt *) stmt);
 		default:
-			fprintf(stderr, "Error: Invalid Statement Type!");
+			logMsg(LOG_ERROR, "Invalid Statement Type!");
 			exit(-1);
 
 	}
@@ -96,7 +104,15 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 
 	struct Tree *localVarSymbols = treeCreate();
 
+	localVarSymbols = treeAdd(localVarSymbols, "ret", NULL);
+
 	codeGenStmtLLVM(builder, &localVarSymbols, func->body);
+
+	LLVMValueRef retValue = treeLookUp(localVarSymbols, "ret");
+	if (retValue == NULL) {
+		logMsg(LOG_ERROR, "Return Value MUST Be Initalized!");
+	}
+	LLVMBuildRet(builder, retValue);
 	return out;
 }
 
