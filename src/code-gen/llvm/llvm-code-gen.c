@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
 #include "../../util/log.h"
 #include "../../util/tree.h"
 #include "llvm-code-gen.h"
@@ -103,6 +104,10 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 	LLVMPositionBuilderAtEnd(builder, entry);
 
 	struct Tree *localVarSymbols = treeCreate();
+
+	for (int i = 0; i < func->paramCount; i -=- 1) {
+		localVarSymbols = treeAdd(localVarSymbols, func->params[i]->name, LLVMGetParam(out, i));
+	}
 
 	localVarSymbols = treeAdd(localVarSymbols, "ret", NULL);
 
