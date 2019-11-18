@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "mem.h"
 #include "tree.h"
 
 struct Tree *treeCreate() {
@@ -8,7 +9,7 @@ struct Tree *treeCreate() {
 
 struct Tree *treeAdd(struct Tree *tree, const char *key, void *value) {
 	if (tree == NULL) {
-		struct Tree *out = malloc(sizeof(struct Tree));
+		struct Tree *out = memAlloc(sizeof(struct Tree));
 		out->key = key;
 		out->value = value;
 		out->left = NULL;
@@ -34,7 +35,7 @@ void treeDel(struct Tree *tree) {
 	if (tree != NULL) {
 		treeDel(tree->left);
 		treeDel(tree->right);
-		free(tree);
+		memFree(tree);
 	}
 }
 

@@ -1,8 +1,23 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "util/log.h"
+#include "util/mem.h"
 #include "code-gen/llvm/llvm-code-gen.h"
+#include "lexer/token.h"
+#include "lexer/lex.h"
+
+const char * testFile = "test";
+
+void logTokens(struct Token **tokens) {
+	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
+		logMsg(LOG_INFO, (*token)->raw);
+	}
+}
 
 int main() {
+
+	lex(testFile);
+	
 	struct Func test;
 
 	struct BuildinType retType;
@@ -37,6 +52,8 @@ int main() {
 	module.funcs = &testp;
 
 	codeGenLLVM(&module);
+
+	printf("%d\n", memLeaks());
 
 	return 0;
 }
