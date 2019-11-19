@@ -6,7 +6,7 @@
 #include "lexer/token.h"
 #include "lexer/lex.h"
 
-const char * testFile = "test";
+const char * testFile = "1234";
 
 void logTokens(struct Token **tokens) {
 	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
@@ -53,7 +53,6 @@ int main() {
 
 	codeGenLLVM(&module);
 
-	printf("%d\n", memLeaks());
-
+	fprintf(stderr, "%d\n", memLeaks());
 	return 0;
 }
