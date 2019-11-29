@@ -32,18 +32,18 @@ struct Pattern PATTERNS[PATTERN_COUNT] = {
 
 // From regcomp docs
 bool match(const char *string, const char *pattern) {
-    int status;
-    regex_t re;
+	int status;
+	regex_t re;
 
-    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
-        return false;      /* Report error. */
-    }
-    status = regexec(&re, string, (size_t) 0, NULL, 0);
-    regfree(&re);
-    if (status != 0) {
-        return false;      /* Report error. */
-    }
-    return true;
+	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+		return false;      /* Report error. */
+	}
+	status = regexec(&re, string, (size_t) 0, NULL, 0);
+	regfree(&re);
+	if (status != 0) {
+		return false;      /* Report error. */
+	}
+	return true;
 }
 
 char *pushChar(char **buffer, int *bufferCount, char c) {
