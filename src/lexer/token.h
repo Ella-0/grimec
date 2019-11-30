@@ -1,6 +1,7 @@
 #pragma once
 
 enum TokenType {
+	NULL_TOKEN = 0,
 	EOF_TOKEN,
 	STRING_TOKEN,
 	INT_TOKEN,

@@ -4,6 +4,7 @@
 #include "../util/mem.h"
 #include "../util/log.h"
 #include "token.h"
+#include <stdio.h>
 
 struct Pattern {
 	enum TokenType type;
@@ -23,12 +24,13 @@ struct Token *null(const char *value) {
 	return NULL;
 }
 
-#define PATTERN_COUNT 1
-struct Pattern PATTERNS[PATTERN_COUNT] = {
+struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "^[0-9]+$", &genInt},
 	{STRING_TOKEN, "^[a-z]+$", &null},
-	{1000, "^[ ]$", &null}
+	{1000, "^[ \n\t\r\v]+$", &null}
 };
+
+struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};
 
 // From regcomp docs
 bool match(const char *string, const char *pattern) {
@@ -55,65 +57,80 @@ char *pushChar(char **buffer, int *bufferCount, char c) {
 }
 
 struct Token **pushToken(struct Token ***buffer, int *bufferCount, struct Token *token) {
+	logMsg(LOG_INFO, "Pushing Token");
 	(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
 	(*buffer)[*bufferCount] = token;
 	(*bufferCount)++;
+	logMsg(LOG_INFO, "Pushed Token");
 	return *buffer;
+}
+
+struct Pattern matchingPattern(const char *buffer) {
+	struct Pattern ret = NULL_PATTERN;
+	for (int i = 0; i < sizeof(PATTERNS) / sizeof(struct Pattern); i ++) {
+		bool thisMatch = match(buffer, PATTERNS[i].pattern);
+		if (thisMatch) {
+			ret = PATTERNS[i];
+		}
+	}
+	return ret;
 }
 
 struct Token **lex(const char *input) {
 	struct Token **out = NULL;
 	int tokenCount = 0;
-	char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
-	int bufferCount = 0;
-	buffer[bufferCount] = '\0';
-	bool matched = false;
-	bool eof = false;
-	while (!eof) {
+	//char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
+	//int bufferCount = 0;
+	//buffer[bufferCount] = '\0';
+	
+	while (*input != '\0') {
+		char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
+		int bufferCount = 0;
+		buffer[bufferCount] = '\0';
+
+		bool matched = false;
+		struct Pattern pattern;
 		struct Token *(*tokenGenFunc)(const char *);
-		while (!matched && !eof) {
-			pushChar(&buffer, &bufferCount, *input);
-			input++;
-			for (int i = 0; i < PATTERN_COUNT; i ++) {
-				bool thisMatch = match(buffer, PATTERNS[i].pattern);
-				if (thisMatch) {
-					tokenGenFunc = PATTERNS[i].gen;
-					matched = true;
-				}
-			}
-			logMsg(LOG_INFO, buffer);
+	
+		while (!matched) {
 			if (*input == '\0') {
-				eof = true;
 				logMsg(LOG_ERROR, "Reached End Of File");
+				logMsg(LOG_ERROR, buffer);
 				exit(-1);
 			}
-		}
-		logMsg(LOG_INFO, "Phase 2");
-		while (matched && !eof) {
+			
 			pushChar(&buffer, &bufferCount, *input);
 			input++;
-			for (int i = 0; i < PATTERN_COUNT; i ++) {
-				bool thisMatch = match(buffer, PATTERNS[i].pattern);
-				if (thisMatch) {
-					tokenGenFunc = PATTERNS[i].gen;
-				} else {
-					matched = false;
-				}
-			}
-			logMsg(LOG_INFO, buffer);
-			if (*input == '\0') {
-				eof = true;
-				logMsg(LOG_INFO, "Reached End Of File");
+
+			pattern = matchingPattern(buffer);
+			matched = pattern.type != NULL_TOKEN;
+		}
+		
+		while (matched) {
+			bool eof = *input == '\0';
+			pushChar(&buffer, &bufferCount, *input);
+			input++;
+
+			struct Pattern testingPattern;
+			if (!eof) {
+				testingPattern = matchingPattern(buffer);
+			} else {
+				testingPattern = NULL_PATTERN;
+			}	
+			matched = testingPattern.type != NULL_TOKEN;
+			if (matched) {
+				pattern = testingPattern;
 			}
 		}
-		buffer[bufferCount] = '\0';
-		logMsg(LOG_INFO, buffer);
-		pushToken(&out, &tokenCount, tokenGenFunc(buffer));	
 
-		buffer = memAlloc(1 * sizeof(char));
-		bufferCount = 0;
-		buffer[bufferCount] = '\0';
+		buffer[bufferCount - 1] = '\0';
+		input--;
+			
+		fprintf(stderr, "%d\n", bufferCount);
+		logMsg(LOG_INFO, buffer);
+		pushToken(&out, &tokenCount, pattern.gen(buffer));
 	}
+	
 	logMsg(LOG_INFO, (*out)->raw);
 	return out;
 }

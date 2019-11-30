@@ -6,7 +6,7 @@
 #include "lexer/token.h"
 #include "lexer/lex.h"
 
-const char * testFile = "1234";
+const char * testFile = "1234aa56b67";
 
 void logTokens(struct Token **tokens) {
 	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
