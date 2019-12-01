@@ -8,6 +8,7 @@
 
 struct Pattern {
 	enum TokenType type;
+	const char *partPattern;
 	const char *pattern;
 	struct Token *(*gen)(const char *value);
 };
@@ -20,14 +21,89 @@ struct Token *genInt(const char *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genId(const char *value) {
+	struct StringToken *token = memAlloc(sizeof(struct StringToken));
+	token->base.type = STRING_TOKEN;
+	token->base.raw = value;
+	token->value = value;
+	return (struct Token *) token;
+}
+
+struct Token *genLParen(const char *value) {
+	struct LParenToken *token = memAlloc(sizeof(struct LParenToken));
+	token->base.type = L_PAREN_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genRParen(const char *value) {
+	struct RParenToken *token = memAlloc(sizeof(struct RParenToken));
+	token->base.type = R_PAREN_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genLBracket(const char *value) {
+	struct LBracketToken *token = memAlloc(sizeof(struct LBracketToken));
+	token->base.type = L_BRACKET_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genRBracket(const char *value) {
+	struct RBracketToken *token = memAlloc(sizeof(struct RBracketToken));
+	token->base.type = R_BRACKET_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genLBrace(const char *value) {
+	struct LBraceToken *token = memAlloc(sizeof(struct LBraceToken));
+	token->base.type = L_BRACE_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genRBrace(const char *value) {
+	struct RBraceToken *token = memAlloc(sizeof(struct RBraceToken));
+	token->base.type = R_BRACE_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genFunc(const char *value) {
+	struct FuncToken *token = memAlloc(sizeof(struct FuncToken));
+	token->base.type = FUNC_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genFor(const char *value) {
+	struct ForToken *token = memAlloc(sizeof(struct ForToken));
+	token->base.type = FOR_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Token *null(const char *value) {
 	return NULL;
 }
 
 struct Pattern PATTERNS[] = {
-	{INT_TOKEN, "^[0-9]+$", &genInt},
-	{STRING_TOKEN, "^[a-z]+$", &null},
-	{1000, "^[ \n\t\r\v]+$", &null}
+	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
+	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
+	{ID_TOKEN, "", "^[a-zA-Z_][a-zA-Z0-9_]+$", &genId},
+	{L_PAREN_TOKEN, "", "^\\($", &genLParen},
+	{R_PAREN_TOKEN, "", "^\\)$", &genRParen},
+	{L_BRACKET_TOKEN, "", "^\\[$", &genLBracket},
+	{R_BRACKET_TOKEN, "", "^\\]$", &genRBracket},
+	{L_BRACE_TOKEN, "", "^\\{$", &genLBrace},
+	{R_BRACE_TOKEN, "", "^\\}$", &genRBrace},
+	{COLON_TOKEN, "", "^:$", &null},
+	{ARROW_TOKEN, "", "^->$", &null},
+	{FUNC_TOKEN, "", "^func$", &genFunc},
+	{FOR_TOKEN, "", "^for$", &genFor},
+	{1000, "", "^[ \n\t\r\v]+$", &null}
 };
 
 struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};
@@ -57,11 +133,11 @@ char *pushChar(char **buffer, int *bufferCount, char c) {
 }
 
 struct Token **pushToken(struct Token ***buffer, int *bufferCount, struct Token *token) {
-	logMsg(LOG_INFO, "Pushing Token");
+	logMsg(LOG_INFO, 1, "Pushing Token");
 	(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
 	(*buffer)[*bufferCount] = token;
 	(*bufferCount)++;
-	logMsg(LOG_INFO, "Pushed Token");
+	logMsg(LOG_INFO, 1, "Pushed Token");
 	return *buffer;
 }
 
@@ -94,8 +170,8 @@ struct Token **lex(const char *input) {
 	
 		while (!matched) {
 			if (*input == '\0') {
-				logMsg(LOG_ERROR, "Reached End Of File");
-				logMsg(LOG_ERROR, buffer);
+				logMsg(LOG_ERROR, 4, "Reached End Of File");
+				logMsg(LOG_ERROR, 4, buffer);
 				exit(-1);
 			}
 			
@@ -127,10 +203,12 @@ struct Token **lex(const char *input) {
 		input--;
 			
 		fprintf(stderr, "%d\n", bufferCount);
-		logMsg(LOG_INFO, buffer);
+		logMsg(LOG_INFO, 2, buffer);
+		logMsg(LOG_INFO, 2, pattern.pattern);
 		pushToken(&out, &tokenCount, pattern.gen(buffer));
 	}
-	
-	logMsg(LOG_INFO, (*out)->raw);
+
+	logMsg(LOG_INFO, 1, "First Token: ");	
+	logMsg(LOG_INFO, 1, (*out)->raw);
 	return out;
 }

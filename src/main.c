@@ -6,15 +6,16 @@
 #include "lexer/token.h"
 #include "lexer/lex.h"
 
-const char * testFile = "1234aa56b67";
+const char * testFile = "func main(args: String) -> Int {ret 0}";
 
 void logTokens(struct Token **tokens) {
 	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
-		logMsg(LOG_INFO, (*token)->raw);
+		logMsg(LOG_INFO, 2, (*token)->raw);
 	}
 }
 
 int main() {
+	setLogLevel(0);
 
 	lex(testFile);
 	
