@@ -22,10 +22,9 @@ struct Token *genInt(const char *value) {
 }
 
 struct Token *genId(const char *value) {
-	struct StringToken *token = memAlloc(sizeof(struct StringToken));
-	token->base.type = STRING_TOKEN;
+	struct IdToken *token = memAlloc(sizeof(struct IdToken));
+	token->base.type = ID_TOKEN;
 	token->base.raw = value;
-	token->value = value;
 	return (struct Token *) token;
 }
 

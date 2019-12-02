@@ -5,8 +5,9 @@
 #include "code-gen/llvm/llvm-code-gen.h"
 #include "lexer/token.h"
 #include "lexer/lex.h"
+#include "parser/parser.h"
 
-const char * testFile = "func main(args: String) -> Int {ret 0}";
+const char * testFile = "func main()";
 
 void logTokens(struct Token **tokens) {
 	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
@@ -17,7 +18,7 @@ void logTokens(struct Token **tokens) {
 int main() {
 	setLogLevel(0);
 
-	lex(testFile);
+	struct Token **tokens = lex(testFile);
 	
 	struct Func test;
 
@@ -53,6 +54,8 @@ int main() {
 	module.funcs = &testp;
 
 	codeGenLLVM(&module);
+
+	parse(tokens);
 
 	fprintf(stderr, "%d\n", memLeaks());
 	return 0;
