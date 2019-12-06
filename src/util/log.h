@@ -13,4 +13,4 @@ void setLogLevel(int level);
 // 2 - log when lexer, parser, code-gen, etc steps are completed.
 // 3 - basic verbose logging. E.G "Started Parsing", "Finished Parsing".
 // 4 - required logging like fatal errors.
-void logMsg(enum LogType type, int level, const char *msg);
+void logMsg(enum LogType type, int level, const char *msg, ...);

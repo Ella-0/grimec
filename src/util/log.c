@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "log.h"
 #define NORMAL "\x1b[0m"
 #define INFO_COLOUR "\x1b[34m"
@@ -12,7 +13,7 @@ void setLogLevel(int level) {
 	logLevel = level;
 }
 
-void logMsg(enum LogType type, int level, const char *msg) {
+void logMsg(enum LogType type, int level, const char *msg, ...) {
 	if (level >= logLevel) {
 		switch (type) {
 			case LOG_INFO:

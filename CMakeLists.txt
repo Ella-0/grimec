@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(grimec)
 
+set(CMAKE_C_COMPILER /usr/bin/clang)
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
