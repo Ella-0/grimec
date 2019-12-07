@@ -9,16 +9,20 @@
 
 const char * testFile = "func main()";
 
-void logTokens(struct Token **tokens) {
-	for (struct Token **token = tokens; (*token)->type != EOF_TOKEN; token++) {
-		logMsg(LOG_INFO, 2, (*token)->raw);
+void logTokens(struct Token const *const *tokens) {
+	for (struct Token const *const *token = tokens; (*token) == NULL || (*token)->type != EOF_TOKEN; token++) {
+		if (*token == NULL) {
+			logMsg(LOG_INFO, 2, "NULL");
+		} else {
+			logMsg(LOG_INFO, 2, (*token)->raw);
+		}
 	}
 }
 
 int main() {
 	setLogLevel(0);
 
-	struct Token **tokens = lex(testFile);
+	struct Token const *const *tokens = lex(testFile);
 	
 	struct Func test;
 
@@ -55,6 +59,7 @@ int main() {
 
 	codeGenLLVM(&module);
 
+	logTokens(tokens);
 	parse(tokens);
 
 	fprintf(stderr, "%d\n", memLeaks());

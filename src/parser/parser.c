@@ -3,7 +3,7 @@
 #include "../util/log.h"
 #include "parser.h"
 
-struct Var parseVar(struct Token ***tokens) {
+struct Var parseVar(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Var");
 	struct Var ret;
 
@@ -29,13 +29,13 @@ struct Var parseVar(struct Token ***tokens) {
 	return ret;
 }
 
-struct Stmt *parseStmt(struct Token ***tokens) {
+struct Stmt *parseStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Statement");
 	struct Stmt *stmt;
 	return stmt;
 }
 
-struct Func parseFunc(struct Token ***tokens) {
+struct Func parseFunc(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Function");
 	struct Func ret;
 	
@@ -49,11 +49,15 @@ struct Func parseFunc(struct Token ***tokens) {
 	logMsg(LOG_INFO, 1, "Func Token Consumption Successful");
 
 	logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
+	logMsg(LOG_INFO, 1, tokens == NULL ? "Null":"Not Null");
+	logMsg(LOG_INFO, 1, *tokens == NULL ? "Null":"Not Null");
+	logMsg(LOG_INFO, 1, **tokens == NULL ? "Null":"Not Null");
 	if ((**tokens)->type != ID_TOKEN) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier!");
 		logMsg(LOG_INFO, 4, (**tokens)->raw);
 		exit(-1);
 	}
+	logMsg(LOG_INFO, 1, "Id Token Found");
 	ret.name = (**tokens)->raw;
 	(*tokens)++; // consume identifier
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
@@ -79,7 +83,7 @@ struct Func parseFunc(struct Token ***tokens) {
 	return ret;
 }
 
-struct Module parseModule(struct Token ***tokens) {
+struct Module parseModule(struct Token const *const **tokens) {
 	struct Module module;
 	logMsg(LOG_INFO, 2, "Parsing Module");
 	while ((**tokens)->type != EOF_TOKEN) {
@@ -95,6 +99,6 @@ struct Module parseModule(struct Token ***tokens) {
 	return module;
 }
 
-struct Module parse(struct Token **tokens) {
+struct Module parse(struct Token const *const *tokens) {
 	return parseModule(&tokens);
 }

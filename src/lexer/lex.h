@@ -1,3 +1,3 @@
 #include "token.h"
 
-struct Token **lex(const char *input);
+struct Token const *const *lex(const char *input);

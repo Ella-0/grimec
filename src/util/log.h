@@ -1,4 +1,6 @@
 #pragma once
+#include <stdarg.h>
+#include "../lexer/token.h"
 
 enum LogType {
 	LOG_INFO,
@@ -14,3 +16,4 @@ void setLogLevel(int level);
 // 3 - basic verbose logging. E.G "Started Parsing", "Finished Parsing".
 // 4 - required logging like fatal errors.
 void logMsg(enum LogType type, int level, const char *msg, ...);
+void vlogMsg(enum LogType type, int level, const char *msg, va_list vp);

@@ -131,12 +131,16 @@ char *pushChar(char **buffer, int *bufferCount, char c) {
 	return *buffer;
 }
 
-struct Token **pushToken(struct Token ***buffer, int *bufferCount, struct Token *token) {
-	logMsg(LOG_INFO, 1, "Pushing Token");
-	(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
-	(*buffer)[*bufferCount] = token;
-	(*bufferCount)++;
-	logMsg(LOG_INFO, 1, "Pushed Token");
+struct Token const **pushToken(struct Token const ***buffer, int *bufferCount, struct Token *token) {
+	if (token == NULL) {
+		logMsg(LOG_INFO, 1, "Not Pushing WhiteSpace");
+	} else {
+		logMsg(LOG_INFO, 1, "Pushing Token %s", token->raw);
+		(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
+		(*buffer)[*bufferCount] = token;
+		(*bufferCount)++;
+		logMsg(LOG_INFO, 1, "Pushed Token");
+	}
 	return *buffer;
 }
 
@@ -151,8 +155,8 @@ struct Pattern matchingPattern(const char *buffer) {
 	return ret;
 }
 
-struct Token **lex(const char *input) {
-	struct Token **out = NULL;
+struct Token const *const *lex(const char *input) {
+	struct Token const **out = NULL;
 	int tokenCount = 0;
 	//char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 	//int bufferCount = 0;
