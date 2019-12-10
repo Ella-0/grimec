@@ -7,14 +7,15 @@
 #include "lexer/lex.h"
 #include "parser/parser.h"
 
-const char * testFile = "func main()";
+const char * testFile = "func main() -> Int ret = 10;";
 
 void logTokens(struct Token const *const *tokens) {
-	for (struct Token const *const *token = tokens; (*token) == NULL || (*token)->type != EOF_TOKEN; token++) {
+	struct Token const *const *token = tokens;
+	for (; (*token) == NULL || (*token)->type != EOF_TOKEN; token++) {
 		if (*token == NULL) {
 			logMsg(LOG_INFO, 2, "NULL");
 		} else {
-			logMsg(LOG_INFO, 2, (*token)->raw);
+			logMsg(LOG_INFO, 2, "%s", (*token)->raw);
 		}
 	}
 }
@@ -57,11 +58,11 @@ int main() {
 	module.funcCount = 1;
 	module.funcs = &testp;
 
-	codeGenLLVM(&module);
-
 	logTokens(tokens);
-	parse(tokens);
+	codeGenLLVM(&module);
+	struct Module tree = parse(tokens);
+	codeGenLLVM(&tree);
 
-	fprintf(stderr, "%d\n", memLeaks());
+	logMsg(LOG_ERROR, 1, "Memory Still Allocated: %d", memLeaks());
 	return 0;
 }

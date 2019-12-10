@@ -8,6 +8,7 @@
 #include "llvm-code-gen.h"
 
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
+	logMsg(LOG_INFO, 2, "Started Type Code Gen");
 	switch (type->type) {
 		case BUILDIN_TYPE:;
 			struct BuildinType *buildinType = (struct BuildinType *) type;
@@ -67,7 +68,12 @@ LLVMValueRef codeGenNullStmtLLVM(LLVMBuilderRef builder, struct NullStmt *stmt) 
 	return LLVMBuildRet(builder, LLVMBuildAdd(builder, LLVMConstInt(LLVMIntType(32), 0, false), LLVMConstInt(LLVMIntType(32), 0, false), "no-op"));
 }
 
+LLVMValueRef codeGenBlockStmt(LLVMBuilderRef builder, struct Tree **localVarSymbols, struct BlockStmt *stmt) {
+	return NULL;
+}
+
 LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbols, struct Stmt *stmt) {
+	logMsg(LOG_INFO, 2, "Started Stmt Code Gen");
 	switch (stmt->type) {
 		case NULL_STMT:
 			logMsg(LOG_INFO, 2, "Building Null Statement!");
@@ -81,6 +87,9 @@ LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbo
 		case EXPR_STMT:
 			logMsg(LOG_INFO, 2, "Building Expr Statement!");
 			return codeGenExprStmtLLVM(builder, (struct ExprStmt *) stmt);
+		case BLOCK_STMT:
+			logMsg(LOG_INFO, 2, "Building Block Statement!");
+			return codeGenBlockStmt(builder, localVarSymbols, (struct BlockStmt *) stmt);
 		default:
 			logMsg(LOG_ERROR, 2, "Invalid Statement Type!");
 			exit(-1);
@@ -89,6 +98,7 @@ LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbo
 }
 
 LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
+	logMsg(LOG_INFO, 2, "Started Module Code Gen");
 	LLVMValueRef out;
 
 	LLVMTypeRef paramTypes[func->paramCount];
@@ -118,6 +128,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 		logMsg(LOG_ERROR, 4, "Return Value MUST Be Initalized!");
 	}
 	LLVMBuildRet(builder, retValue);
+	logMsg(LOG_INFO, 2, "Finished Module Code Gen");
 	return out;
 }
 

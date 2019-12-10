@@ -20,6 +20,7 @@ enum TokenType {
 	ARROW_TOKEN,
 
 	FUNC_TOKEN,
+	VAR_TOKEN,
 	FOR_TOKEN,
 	WHILE_TOKEN,
 	IF_TOKEN,
@@ -78,6 +79,10 @@ struct ArrowToken {
 };
 
 struct FuncToken {
+	struct Token base;
+};
+
+struct VarToken {
 	struct Token base;
 };
 

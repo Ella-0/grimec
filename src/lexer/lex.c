@@ -77,6 +77,13 @@ struct Token *genFunc(const char *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genVar(const char *value) {
+	struct VarToken *token = memAlloc(sizeof(struct VarToken));
+	token->base.type = VAR_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Token *genFor(const char *value) {
 	struct ForToken *token = memAlloc(sizeof(struct ForToken));
 	token->base.type = FOR_TOKEN;
@@ -84,25 +91,45 @@ struct Token *genFor(const char *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genColon(char const *value) {
+	struct ColonToken *token = memAlloc(sizeof(struct ColonToken));
+	token->base.type = COLON_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genArrow(char const *value) {
+	struct ArrowToken *token = memAlloc(sizeof(struct ArrowToken));
+	token->base.type = ARROW_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Token *null(const char *value) {
+	logMsg(LOG_ERROR, 4, "Unimplemened Token Matched");
+	return NULL;
+}
+
+struct Token *genWhitespace(const char *value) {
 	return NULL;
 }
 
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
-	{ID_TOKEN, "", "^[a-zA-Z_][a-zA-Z0-9_]+$", &genId},
+	{ID_TOKEN, "", "^[a-zA-Z_][a-zA-Z0-9_]*$", &genId},
 	{L_PAREN_TOKEN, "", "^\\($", &genLParen},
 	{R_PAREN_TOKEN, "", "^\\)$", &genRParen},
 	{L_BRACKET_TOKEN, "", "^\\[$", &genLBracket},
 	{R_BRACKET_TOKEN, "", "^\\]$", &genRBracket},
 	{L_BRACE_TOKEN, "", "^\\{$", &genLBrace},
 	{R_BRACE_TOKEN, "", "^\\}$", &genRBrace},
-	{COLON_TOKEN, "", "^:$", &null},
-	{ARROW_TOKEN, "", "^->$", &null},
+	{COLON_TOKEN, "", "^:$", &genColon},
+	{ARROW_TOKEN, "", "^->$", &genArrow},
 	{FUNC_TOKEN, "", "^func$", &genFunc},
+	{VAR_TOKEN, "", "^var$", &genVar},
 	{FOR_TOKEN, "", "^for$", &genFor},
-	{1000, "", "^[ \n\t\r\v]+$", &null}
+	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace}
 };
 
 struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};
@@ -205,7 +232,7 @@ struct Token const *const *lex(const char *input) {
 		buffer[bufferCount - 1] = '\0';
 		input--;
 			
-		fprintf(stderr, "%d\n", bufferCount);
+		logMsg(LOG_INFO, 2, "%d\n", bufferCount);
 		logMsg(LOG_INFO, 2, buffer);
 		logMsg(LOG_INFO, 2, pattern.pattern);
 		pushToken(&out, &tokenCount, pattern.gen(buffer));
@@ -213,5 +240,11 @@ struct Token const *const *lex(const char *input) {
 
 	logMsg(LOG_INFO, 1, "First Token: ");	
 	logMsg(LOG_INFO, 1, (*out)->raw);
+	
+	struct Token *eofToken = malloc(sizeof(struct Token));
+	eofToken->type = EOF_TOKEN;
+	eofToken->raw = "";
+	pushToken(&out, &tokenCount, eofToken);
+
 	return out;
 }
