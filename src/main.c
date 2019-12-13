@@ -7,7 +7,9 @@
 #include "lexer/lex.h"
 #include "parser/parser.h"
 
-const char * testFile = "func main() -> Int ret = 10;";
+const char * testFile =
+"mod test\n"
+"func main() -> Int ret = 10;";
 
 void logTokens(struct Token const *const *tokens) {
 	struct Token const *const *token = tokens;
@@ -59,7 +61,7 @@ int main() {
 	module.funcs = &testp;
 
 	logTokens(tokens);
-	codeGenLLVM(&module);
+	//codeGenLLVM(&module);
 	struct Module tree = parse(tokens);
 	codeGenLLVM(&tree);
 

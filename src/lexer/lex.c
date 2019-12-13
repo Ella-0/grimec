@@ -25,6 +25,7 @@ struct Token *genId(const char *value) {
 	struct IdToken *token = memAlloc(sizeof(struct IdToken));
 	token->base.type = ID_TOKEN;
 	token->base.raw = value;
+	token->value = value;
 	return (struct Token *) token;
 }
 
@@ -114,6 +115,34 @@ struct Token *genWhitespace(const char *value) {
 	return NULL;
 }
 
+struct Token *genDoubleColon(char const *value) {
+	struct DoubleColonToken *token = memAlloc(sizeof(struct DoubleColonToken));
+	token->base.type = DOUBLE_COLON_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genEquals(char const *value) {
+	struct EqualsToken *token = memAlloc(sizeof(struct EqualsToken));
+	token->base.type = EQUALS_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genSemiColon(char const *value) {
+	struct SemiColonToken *token = memAlloc(sizeof(struct SemiColonToken));
+	token->base.type = SEMI_COLON_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genMod(char const *value) {
+	struct ModToken *token = memAlloc(sizeof(struct ModToken));
+	token->base.type = MOD_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
@@ -125,11 +154,15 @@ struct Pattern PATTERNS[] = {
 	{L_BRACE_TOKEN, "", "^\\{$", &genLBrace},
 	{R_BRACE_TOKEN, "", "^\\}$", &genRBrace},
 	{COLON_TOKEN, "", "^:$", &genColon},
+	{DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},
 	{ARROW_TOKEN, "", "^->$", &genArrow},
 	{FUNC_TOKEN, "", "^func$", &genFunc},
 	{VAR_TOKEN, "", "^var$", &genVar},
 	{FOR_TOKEN, "", "^for$", &genFor},
-	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace}
+	{EQUALS_TOKEN, "", "^=$", &genEquals},
+	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},
+	{MOD_TOKEN, "", "^mod$", &genMod},
+	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 
 struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};

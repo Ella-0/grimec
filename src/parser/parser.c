@@ -58,6 +58,34 @@ struct Var *parseVar(struct Token const *const **tokens) {
 	return ret;
 }
 
+struct Expr *parseExpr(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Expr");
+	struct Expr *ret;
+	switch ((**tokens)->type) {
+		case INT_TOKEN:;
+			struct IntLiteral *lit = memAlloc(sizeof(struct IntLiteral));
+			lit->base.base.type = LITERAL_EXPR;
+			lit->base.type = INT_LITERAL;
+			lit->val = ((struct IntToken *) (**tokens))->value;
+			ret = (struct Expr *) lit;
+			logMsg(LOG_INFO, 1, "%d", lit->val);
+			(*tokens)++;
+			break;
+		default:
+			logMsg(LOG_ERROR, 4, "Invalid Expression");
+			exit(-1);
+			break;
+	}
+	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
+	if ((**tokens)->type != SEMI_COLON_TOKEN) {
+		logMsg(LOG_INFO, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "';' Token consumption successful");
+	logMsg(LOG_INFO, 2, "Parsed Expr");
+	return ret;
+}
+
 struct Stmt *parseStmt(struct Token const *const **tokens);
 
 void pushStmt(struct Stmt ***buffer, int *count, struct Stmt *stmt) {
@@ -129,6 +157,37 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 	return (struct Stmt *) out;
 }
 
+// ID = Expr
+struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Assign Stmt");
+	struct AssignStmt *out = memAlloc(sizeof(struct AssignStmt));
+	out->base.type = ASSIGN_STMT;
+
+	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+	if ((**tokens)->type != ID_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'");
+		exit(-1);
+	}
+	(*tokens)++;
+	struct Var *var = memAlloc(sizeof(struct Var));
+	var->name = ((struct IdToken *)(**tokens))->value;
+	var->name = "ret";
+	out->var = var;
+	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
+
+	logMsg(LOG_INFO, 1, "Attempting '=' token consumption");
+	if ((**tokens)->type != EQUALS_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '=' but got '%s'");
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'=' Token Consumption Successful");
+
+	out->init = parseExpr(tokens);
+	logMsg(LOG_INFO, 2, "Parsed Assign Stmt");
+	return (struct Stmt *) out;
+}
+
 struct Stmt *parseStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Statement");
 	struct Stmt *stmt;
@@ -139,11 +198,15 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 		case VAR_TOKEN:
 			stmt = parseVarStmt(tokens);
 			break;
+		case ID_TOKEN:
+			stmt = parseAssignStmt(tokens);
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unexpected Token: %s", (**tokens)->raw);
 			exit(-1);
 			break;
 	}
+	logMsg(LOG_INFO, 2, "Parsed Statement");
 	return stmt;
 }
 
@@ -212,6 +275,7 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	ret->retType = parseType(tokens);
 	ret->body = parseStmt(tokens);
 
+	logMsg(LOG_INFO, 2, "Parsed Function");
 	return ret;
 }
 
@@ -221,10 +285,34 @@ void pushFunc(struct Func ***buffer, int *count, struct Func *func) {
 	(*buffer)[(*count) - 1 ] = func;
 }
 
+char const *parseModuleName(struct Token const *const **tokens) {
+	char const *ret;
+	logMsg(LOG_INFO, 2, "Parsing Module Name");
+
+	logMsg(LOG_INFO, 1, "Attempting 'mod' token consumption");
+	if ((**tokens)->type != MOD_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'mod' but got %s", (**tokens)->raw);
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'mod' Token Consumption Successful");
+
+	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+	if ((**tokens)->type != ID_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	ret = (**tokens)->raw;
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "Id token consumption successful");
+	logMsg(LOG_INFO, 2, "Parsed Module Name");
+	return ret;
+}
 
 struct Module parseModule(struct Token const *const **tokens) {
 	struct Module module;
 	logMsg(LOG_INFO, 2, "Parsing Module");
+	module.name = parseModuleName(tokens);
 	module.funcCount = 0;
 	module.funcs = NULL;
 	while ((**tokens)->type != EOF_TOKEN) {
@@ -237,6 +325,7 @@ struct Module parseModule(struct Token const *const **tokens) {
 				exit(-1);
 		}
 	}
+	logMsg(LOG_INFO, 2, "Parsed Module");
 	return module;
 }
 

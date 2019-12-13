@@ -24,7 +24,8 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 }
 
 LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *lit) {
-	return LLVMConstInt(LLVMIntType(32), lit->val, false);
+	LLVMValueRef ret = LLVMConstInt(LLVMIntType(32), lit->val, false);
+	return ret;
 }
 
 LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *expr) {
@@ -38,14 +39,17 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *
 }
 
 LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr) {
+	LLVMValueRef ret;
 	switch (expr->type) {
 		case LITERAL_EXPR:
 			logMsg(LOG_INFO, 2, "Building Literal Expression!");
-			return codeGenLiteralExprLLVM(builder, (struct LiteralExpr *) expr);
+			ret = codeGenLiteralExprLLVM(builder, (struct LiteralExpr *) expr);
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Expression Type!");
 			exit(-1);
 	}
+	return ret;
 }
 
 LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct ExprStmt *stmt) {
@@ -98,7 +102,7 @@ LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbo
 }
 
 LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
-	logMsg(LOG_INFO, 2, "Started Module Code Gen");
+	logMsg(LOG_INFO, 2, "Started Function Code Gen");
 	LLVMValueRef out;
 
 	LLVMTypeRef paramTypes[func->paramCount];
@@ -133,9 +137,12 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 }
 
 void codeGenLLVM(struct Module *module) {
+	logMsg(LOG_INFO, 2, "Started Codegen");
 	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(module->name);
+	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", module->name);
 	for (int i = 0; i < module->funcCount; i-=-1) {
 		codeGenFuncLLVM(moduleRef, module->funcs[i]);
 	}
 	printf("%s\n", LLVMPrintModuleToString(moduleRef));
+	logMsg(LOG_INFO, 2, "Finished Codegen");
 };

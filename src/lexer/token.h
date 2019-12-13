@@ -24,6 +24,12 @@ enum TokenType {
 	FOR_TOKEN,
 	WHILE_TOKEN,
 	IF_TOKEN,
+	USE_TOKEN,
+	MOD_TOKEN,
+
+	DOUBLE_COLON_TOKEN,
+	EQUALS_TOKEN,
+	SEMI_COLON_TOKEN,
 };
 
 struct Token {
@@ -95,5 +101,25 @@ struct WhileToken {
 };
 
 struct IfToken {
+	struct Token base;
+};
+
+struct DoubleColonToken {
+	struct Token base;
+};
+
+struct EqualsToken {
+	struct Token base;
+};
+
+struct SemiColonToken {
+	struct Token base;
+};
+
+struct ModToken {
+	struct Token base;
+};
+
+struct UseToken {
 	struct Token base;
 };
