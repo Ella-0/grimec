@@ -143,6 +143,41 @@ struct Token *genMod(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genUse(char const *value) {
+	struct ModToken *token = memAlloc(sizeof(struct ModToken));
+	token->base.type = MOD_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+} 
+
+struct Token *genAdd(char const *value) {
+	struct AddToken *token = memAlloc(sizeof(struct AddToken));
+	token->base.type = ADD_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genSub(char const *value) {
+	struct SubToken *token = memAlloc(sizeof(struct SubToken));
+	token->base.type = SUB_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genMul(char const *value) {
+	struct MulToken *token = memAlloc(sizeof(struct MulToken));
+	token->base.type = MUL_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genDiv(char const *value) {
+	struct DivToken *token = memAlloc(sizeof(struct DivToken));
+	token->base.type = DIV_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
@@ -162,6 +197,11 @@ struct Pattern PATTERNS[] = {
 	{EQUALS_TOKEN, "", "^=$", &genEquals},
 	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},
 	{MOD_TOKEN, "", "^mod$", &genMod},
+	{USE_TOKEN, "", "^use$", &genUse},
+	{ADD_TOKEN, "", "^\\+$", &genAdd},
+	{SUB_TOKEN, "", "^\\-$", &genSub},
+	{MUL_TOKEN, "", "^\\*$", &genMul},
+	{DIV_TOKEN, "", "^\\/$", &genDiv},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 

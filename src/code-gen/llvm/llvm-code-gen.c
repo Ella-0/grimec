@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include <llvm-c/Core.h>
 #include <llvm-c/ExecutionEngine.h>
 #include "../../util/log.h"
+#include "../../util/mem.h"
 #include "../../util/tree.h"
 #include "llvm-code-gen.h"
 
@@ -24,6 +26,7 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 }
 
 LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *lit) {
+	logMsg(LOG_INFO, 1, "%d", lit->val);
 	LLVMValueRef ret = LLVMConstInt(LLVMIntType(32), lit->val, false);
 	return ret;
 }
@@ -38,12 +41,35 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *
 	}
 }
 
+LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr);
+
+LLVMValueRef codeGenBinaryExprLLVM(LLVMBuilderRef builder, struct BinaryExpr *expr) {
+	switch (expr->op) {
+		case ADD_OP:
+			LLVMBuildAdd(builder, codeGenExprLLVM(builder, expr->lhs), codeGenExprLLVM(builder, expr->rhs), "");
+			break;
+		case SUB_OP:
+			LLVMBuildSub(builder, codeGenExprLLVM(builder, expr->lhs), codeGenExprLLVM(builder, expr->rhs), "");
+			break;
+		case MUL_OP:
+			LLVMBuildMul(builder, codeGenExprLLVM(builder, expr->lhs), codeGenExprLLVM(builder, expr->rhs), "");
+			break;
+		default:
+			logMsg(LOG_ERROR, 4, "Unimplemented Op");
+			exit(-1);
+	}
+}
+
 LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct Expr *expr) {
 	LLVMValueRef ret;
 	switch (expr->type) {
 		case LITERAL_EXPR:
 			logMsg(LOG_INFO, 2, "Building Literal Expression!");
 			ret = codeGenLiteralExprLLVM(builder, (struct LiteralExpr *) expr);
+			break;
+		case BINARY_EXPR:
+			logMsg(LOG_INFO, 2, "Building Binary Expression!");
+			ret = codeGenBinaryExprLLVM(builder, (struct BinaryExpr *) expr);
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Expression Type!");
@@ -101,9 +127,28 @@ LLVMValueRef codeGenStmtLLVM(LLVMBuilderRef builder, struct Tree **localVarSymbo
 	}
 }
 
-LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
+char const *mangleFuncName(char const *moduleName, char const *name) {
+	char *ret = memAlloc(sizeof(char) * 1024);
+	strcat(ret, moduleName);
+	strcat(ret, "_");
+	strcat(ret, name);
+	return ret;
+}
+
+LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, LLVMValueRef func) {
+	LLVMValueRef out = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMIntType(32), NULL, 0, false));
+	LLVMBuilderRef builder = LLVMCreateBuilder();
+	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
+	LLVMPositionBuilderAtEnd(builder, entry);
+	LLVMBuildRet(builder, LLVMBuildCall(builder, func, NULL, 0, ""));
+	return out;
+}
+
+LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree **localFuncs, char const *moduleName, struct Func *func) {
 	logMsg(LOG_INFO, 2, "Started Function Code Gen");
 	LLVMValueRef out;
+
+	char const *name = mangleFuncName(moduleName, func->name);
 
 	LLVMTypeRef paramTypes[func->paramCount];
 	for (int i = 0; i < sizeof(paramTypes); i -=- 1) {
@@ -112,7 +157,8 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 
 	LLVMTypeRef retType = codeGenTypeLLVM(module, func->retType);
 
-	out = LLVMAddFunction(module, func->name, LLVMFunctionType(retType, paramTypes, func->paramCount, false));
+	out = LLVMAddFunction(module, name, LLVMFunctionType(retType, paramTypes, func->paramCount, false));
+	treeAdd(*localFuncs, name, out);
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
@@ -132,16 +178,37 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Func *func) {
 		logMsg(LOG_ERROR, 4, "Return Value MUST Be Initalized!");
 	}
 	LLVMBuildRet(builder, retValue);
+	
+	
+	if (!strcmp(func->name, "main")) {
+		codeGenMainFuncLLVM(module, out);
+	}
 	logMsg(LOG_INFO, 2, "Finished Module Code Gen");
 	return out;
 }
 
+char const *mangleModuleName(char const **names, unsigned int nameCount) {
+	char *ret = memAlloc(sizeof(char) *1024);
+	ret[0] = '\0';
+	for (int i = 0; i < nameCount; i-=-1) {
+		strcat(ret, names[i]);
+		if (i != nameCount - 1) {
+			strcat(ret, "_");
+		}
+	}
+	logMsg(LOG_INFO, 1, "%s", ret);
+	return ret;
+}
+
 void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 2, "Started Codegen");
-	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(module->name);
-	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", module->name);
+	logMsg(LOG_INFO, 1, "%s", module->names[0]);
+	char const *name = mangleModuleName(module->names, module->nameCount);
+	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(name);
+	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", name);
+	struct Tree *localFuncs = treeCreate();
 	for (int i = 0; i < module->funcCount; i-=-1) {
-		codeGenFuncLLVM(moduleRef, module->funcs[i]);
+		codeGenFuncLLVM(moduleRef, &localFuncs, name, module->funcs[i]);
 	}
 	printf("%s\n", LLVMPrintModuleToString(moduleRef));
 	logMsg(LOG_INFO, 2, "Finished Codegen");

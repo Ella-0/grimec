@@ -7,6 +7,11 @@ enum TokenType {
 	INT_TOKEN,
 	ID_TOKEN,
 
+	ADD_TOKEN,
+	SUB_TOKEN,
+	MUL_TOKEN,
+	DIV_TOKEN,
+
 	L_PAREN_TOKEN,
 	R_PAREN_TOKEN,
 
@@ -121,5 +126,21 @@ struct ModToken {
 };
 
 struct UseToken {
+	struct Token base;
+};
+
+struct AddToken {
+	struct Token base;
+};
+
+struct SubToken {
+	struct Token base;
+};
+
+struct MulToken {
+	struct Token base;
+};
+
+struct DivToken {
 	struct Token base;
 };

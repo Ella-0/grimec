@@ -8,8 +8,9 @@
 #include "parser/parser.h"
 
 const char * testFile =
-"mod test\n"
-"func main() -> Int ret = 10;";
+"mod test::test::test\n"
+"func main() -> Int ret = (13 + 71) * 10;\n"
+"func test() -> Int ret = 5;";
 
 void logTokens(struct Token const *const *tokens) {
 	struct Token const *const *token = tokens;
@@ -26,42 +27,8 @@ int main() {
 	setLogLevel(0);
 
 	struct Token const *const *tokens = lex(testFile);
-	
-	struct Func test;
-
-	struct BuildinType retType;
-	retType.base.type = BUILDIN_TYPE;
-	retType.type = INT_BUILDIN_TYPE;
-
-	struct IntLiteral expr;
-	expr.base.base.type = LITERAL_EXPR;
-	expr.base.type = INT_LITERAL;
-	expr.val = 1;
-
-	struct Var var;
-	var.type = &retType.base;
-	var.name = "ret";
-
-	struct AssignStmt body;
-	body.base.type = ASSIGN_STMT;
-	body.var = &var;
-	body.init = &expr.base.base;
-
-	test.name = "xyz_grime_example_main";
-	test.paramCount = 0;
-	test.params = NULL;
-	test.retType = &retType.base;
-	test.body = &body.base;
-
-	struct Func *testp = &test;
-
-	struct Module module;
-	module.name = "xyz_grime_example";
-	module.funcCount = 1;
-	module.funcs = &testp;
 
 	logTokens(tokens);
-	//codeGenLLVM(&module);
 	struct Module tree = parse(tokens);
 	codeGenLLVM(&tree);
 

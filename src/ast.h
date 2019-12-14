@@ -71,6 +71,9 @@ struct UnaryExpr {
 
 enum BinaryOp {
 	ADD_OP,
+	SUB_OP,
+	MUL_OP,
+	DIV_OP,
 };
 
 struct BinaryExpr {
@@ -129,7 +132,8 @@ struct Func {
 };
 
 struct Module {
-	const char *name;
+	unsigned int nameCount;
+	char const **names; // name0::name1::name2
 	unsigned int funcCount;
 	struct Func **funcs;
 };

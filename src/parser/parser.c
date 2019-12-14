@@ -58,30 +58,119 @@ struct Var *parseVar(struct Token const *const **tokens) {
 	return ret;
 }
 
-struct Expr *parseExpr(struct Token const *const **tokens) {
-	logMsg(LOG_INFO, 2, "Parsing Expr");
+struct Expr *parseExpr(struct Token const *const **tokens);
+
+// terminals
+
+struct Expr *parseFactor(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Factor");
 	struct Expr *ret;
 	switch ((**tokens)->type) {
-		case INT_TOKEN:;
-			struct IntLiteral *lit = memAlloc(sizeof(struct IntLiteral));
-			lit->base.base.type = LITERAL_EXPR;
-			lit->base.type = INT_LITERAL;
-			lit->val = ((struct IntToken *) (**tokens))->value;
-			ret = (struct Expr *) lit;
-			logMsg(LOG_INFO, 1, "%d", lit->val);
-			(*tokens)++;
+		case INT_TOKEN: {
+				struct IntLiteral *lit = memAlloc(sizeof(struct IntLiteral));
+				lit->base.base.type = LITERAL_EXPR;
+				lit->base.type = INT_LITERAL;
+				lit->val = ((struct IntToken *) (**tokens))->value;
+				ret = (struct Expr *) lit;
+				logMsg(LOG_INFO, 1, "%d", lit->val);
+				(*tokens)++; 
+			}
+			break;
+		case L_PAREN_TOKEN: {
+				logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
+		    		if ((**tokens)-> type != L_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+				ret = parseExpr(tokens);
+				logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
+		    		if ((**tokens)-> type != R_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "')' Token Consumption Successful");
+			}
 			break;
 		default:
-			logMsg(LOG_ERROR, 4, "Invalid Expression");
+			logMsg(LOG_ERROR, 4, "Invalid Expression '%s'", (**tokens)->raw);
 			exit(-1);
 			break;
 	}
-	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
-	if ((**tokens)->type != SEMI_COLON_TOKEN) {
-		logMsg(LOG_INFO, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
+
+	logMsg(LOG_INFO, 2, "Parsed Factor");
+	return ret;
+}
+
+// * /
+struct Expr *parseTerm(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Term");
+	struct Expr *ret = parseFactor(tokens);
+	while ((**tokens)->type == MUL_TOKEN || (**tokens)->type == DIV_TOKEN) {
+		switch ((**tokens)->type) {
+			case MUL_TOKEN: {
+					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					(*tokens)++;
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = MUL_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+			case DIV_TOKEN: {
+					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					(*tokens)++;
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = DIV_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+
+			default:
+				logMsg(LOG_ERROR, 4, "Unimplemented Operation '%s'", (**tokens)->raw);
+				exit(-1);
+		}
 	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "';' Token consumption successful");
+	logMsg(LOG_INFO, 2, "Parsed");
+	return ret;
+}
+
+struct Expr *parseExpr(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Expr");
+	struct Expr *ret = parseTerm(tokens);
+	while ((**tokens)->type == ADD_TOKEN || (**tokens)->type == SUB_TOKEN) {
+		switch ((**tokens)->type) {
+			case ADD_TOKEN: {
+					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					(*tokens)++;
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = ADD_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+			case SUB_TOKEN: {
+					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					(*tokens)++;
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = SUB_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+
+			default:
+				logMsg(LOG_ERROR, 4, "Unimplemented Operation '%s'", (**tokens)->raw);
+				exit(-1);
+		}
+	}
 	logMsg(LOG_INFO, 2, "Parsed Expr");
 	return ret;
 }
@@ -184,6 +273,13 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 1, "'=' Token Consumption Successful");
 
 	out->init = parseExpr(tokens);
+	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
+	if ((**tokens)->type != SEMI_COLON_TOKEN) {
+		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "';' Token consumption successful");
 	logMsg(LOG_INFO, 2, "Parsed Assign Stmt");
 	return (struct Stmt *) out;
 }
@@ -285,8 +381,14 @@ void pushFunc(struct Func ***buffer, int *count, struct Func *func) {
 	(*buffer)[(*count) - 1 ] = func;
 }
 
-char const *parseModuleName(struct Token const *const **tokens) {
-	char const *ret;
+void pushString(char const ***buffer, int *count, char const *string) {
+	(*count)++;
+	(*buffer) = memRealloc(*buffer, sizeof(char const *) * *count);
+	(*buffer)[(*count) - 1 ] = string;
+}
+
+char const **parseModuleName(struct Token const *const **tokens, unsigned int *count) {
+	char const **ret = NULL;
 	logMsg(LOG_INFO, 2, "Parsing Module Name");
 
 	logMsg(LOG_INFO, 1, "Attempting 'mod' token consumption");
@@ -302,9 +404,28 @@ char const *parseModuleName(struct Token const *const **tokens) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
-	ret = (**tokens)->raw;
+	pushString(&ret, count, (**tokens)->raw);
 	(*tokens)++;
 	logMsg(LOG_INFO, 1, "Id token consumption successful");
+
+	while ((**tokens)->type == DOUBLE_COLON_TOKEN) {
+		logMsg(LOG_INFO, 1, "Attempting '::' token consumption");
+		if ((**tokens)->type != DOUBLE_COLON_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected '::' but got ''%s");
+			exit(-1);
+		}
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "'::' Token Consumption Successful");
+		logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+		if ((**tokens)->type != ID_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+			exit(-1);
+		}
+		pushString(&ret, count, (**tokens)->raw);
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "Id token consumption successful");
+	}
+
 	logMsg(LOG_INFO, 2, "Parsed Module Name");
 	return ret;
 }
@@ -312,7 +433,8 @@ char const *parseModuleName(struct Token const *const **tokens) {
 struct Module parseModule(struct Token const *const **tokens) {
 	struct Module module;
 	logMsg(LOG_INFO, 2, "Parsing Module");
-	module.name = parseModuleName(tokens);
+	module.nameCount = 0;
+	module.names = parseModuleName(tokens, &module.nameCount);
 	module.funcCount = 0;
 	module.funcs = NULL;
 	while ((**tokens)->type != EOF_TOKEN) {
