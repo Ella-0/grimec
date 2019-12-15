@@ -1,10 +1,21 @@
 # Grime Compiler
 The new static compiler for the grime programming language.
 
+## Building
+### Dependencies
+ * CMake
+ * LLVM
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+```
+
 ## TODO
 
 ### Compiler
- - [x] Main funciton
+ - [x] Main function
  - [ ] Link against other binaries
 
 ### Standard Lib
@@ -15,4 +26,4 @@ The new static compiler for the grime programming language.
  - [ ] File
 
 #### Functions
- - [ ] println
+ - [x] println
