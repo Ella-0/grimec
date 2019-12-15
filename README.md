@@ -4,7 +4,7 @@ The new static compiler for the grime programming language.
 ## TODO
 
 ### Compiler
- - [ ] Main funciton
+ - [x] Main funciton
  - [ ] Link against other binaries
 
 ### Standard Lib
