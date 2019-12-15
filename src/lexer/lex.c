@@ -144,8 +144,8 @@ struct Token *genMod(char const *value) {
 }
 
 struct Token *genUse(char const *value) {
-	struct ModToken *token = memAlloc(sizeof(struct ModToken));
-	token->base.type = MOD_TOKEN;
+	struct UseToken *token = memAlloc(sizeof(struct UseToken));
+	token->base.type = USE_TOKEN;
 	token->base.raw = value;
 	return (struct Token *) token;
 } 
@@ -174,6 +174,13 @@ struct Token *genMul(char const *value) {
 struct Token *genDiv(char const *value) {
 	struct DivToken *token = memAlloc(sizeof(struct DivToken));
 	token->base.type = DIV_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genFrom(char const *value) {
+	struct FromToken *token = memAlloc(sizeof(struct FromToken));
+	token->base.type = FROM_TOKEN;
 	token->base.raw = value;
 	return (struct Token *) token;
 }

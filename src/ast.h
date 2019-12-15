@@ -34,6 +34,18 @@ struct Expr {
 	enum ExprType type;
 };
 
+struct CallExpr {
+	struct Expr base;
+	char const *name;
+	unsigned int argCount;
+	struct Expr **args;
+};
+
+struct VarExpr {
+	struct Expr base;
+	char const *name;
+};
+
 enum LiteralType {
 	NULL_LITERAL,
 	INT_LITERAL,
@@ -131,9 +143,18 @@ struct Func {
 	struct Stmt *body;
 };
 
+struct Use {
+	unsigned int nameCount;
+	const char **names;
+};
+
 struct Module {
 	unsigned int nameCount;
 	char const **names; // name0::name1::name2
+	
+	unsigned int includeCount;
+	struct Use **includes;
+
 	unsigned int funcCount;
 	struct Func **funcs;
 };

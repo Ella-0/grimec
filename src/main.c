@@ -6,10 +6,18 @@
 #include "lexer/token.h"
 #include "lexer/lex.h"
 #include "parser/parser.h"
+#include "file/file.h"
 
 const char * testFile =
 "mod test::test::test\n"
-"func main() -> Int ret = (13 + 71) * 10;\n"
+"use std::io\n"
+"func main() -> Int {\n"
+	"var x: Int = 10;\n"
+	"var y: Int = x * 10\n;"
+	"ret = x;\n"
+	"x = ret * x * y;\n"
+	"ret = x;\n"
+"}\n"
 "func test() -> Int ret = 5;";
 
 void logTokens(struct Token const *const *tokens) {
@@ -23,14 +31,21 @@ void logTokens(struct Token const *const *tokens) {
 	}
 }
 
-int main() {
-	setLogLevel(0);
+int main(int argc, char const **argv) {
 
-	struct Token const *const *tokens = lex(testFile);
+	while (argc > 1) {
+		char const *fileName = argv[argc - 1];
+		argc--;
+		setLogLevel(0);
 
-	logTokens(tokens);
-	struct Module tree = parse(tokens);
-	codeGenLLVM(&tree);
+		char const *source = readFile(fileName);
+
+		struct Token const *const *tokens = lex(source);
+
+		logTokens(tokens);
+		struct Module tree = parse(tokens);
+		codeGenLLVM(&tree);
+	}
 
 	logMsg(LOG_ERROR, 1, "Memory Still Allocated: %d", memLeaks());
 	return 0;

@@ -25,6 +25,7 @@ enum TokenType {
 	ARROW_TOKEN,
 
 	FUNC_TOKEN,
+	FROM_TOKEN,
 	VAR_TOKEN,
 	FOR_TOKEN,
 	WHILE_TOKEN,
@@ -142,5 +143,9 @@ struct MulToken {
 };
 
 struct DivToken {
+	struct Token base;
+};
+
+struct FromToken {
 	struct Token base;
 };
