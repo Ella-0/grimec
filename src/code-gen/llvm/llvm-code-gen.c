@@ -86,6 +86,9 @@ LLVMValueRef codeGenBinaryExprLLVM(LLVMBuilderRef builder, struct TreeList local
 		case MUL_OP:
 			LLVMBuildMul(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, expr->rhs), "");
 			break;
+		case DIV_OP:
+			LLVMBuildSDiv(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, expr->rhs), "");
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unimplemented Op");
 			exit(-1);
