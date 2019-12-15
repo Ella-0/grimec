@@ -185,6 +185,13 @@ struct Token *genFrom(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genDef(char const *value) {
+	struct DefToken *token = memAlloc(sizeof(struct FromToken));
+	token->base.type = DEF_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
@@ -205,6 +212,8 @@ struct Pattern PATTERNS[] = {
 	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},
 	{MOD_TOKEN, "", "^mod$", &genMod},
 	{USE_TOKEN, "", "^use$", &genUse},
+	{FROM_TOKEN, "", "^from$", &genFrom},
+	{DEF_TOKEN, "", "^def$", &genDef},
 	{ADD_TOKEN, "", "^\\+$", &genAdd},
 	{SUB_TOKEN, "", "^\\-$", &genSub},
 	{MUL_TOKEN, "", "^\\*$", &genMul},

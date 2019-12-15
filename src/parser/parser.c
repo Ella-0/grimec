@@ -299,7 +299,7 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 
 	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
 	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'");
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
 	(*tokens)++;
@@ -311,7 +311,7 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 
 	logMsg(LOG_INFO, 1, "Attempting '=' token consumption");
 	if ((**tokens)->type != EQUALS_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '=' but got '%s'");
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '=' but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
 	(*tokens)++;
@@ -544,6 +544,140 @@ void pushUse(struct Use ***buffer, int *count, struct Use *use) {
 	(*buffer)[(*count) - 1 ] = use;
 }
 
+struct Def *parseDef(struct Token const *const **tokens) {
+	struct Def def;
+	struct Def *out;
+	struct Use *use = memAlloc(sizeof(struct Use));
+	logMsg(LOG_INFO, 2, "Parsing Use");
+
+	logMsg(LOG_INFO, 1, "Attempting 'from' token consumption");
+	if ((**tokens)->type != FROM_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'from' but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'from' token consumption successful");
+
+	use->names = NULL;
+	use->nameCount = 0;
+
+	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+	if ((**tokens)->type != ID_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	pushString(&use->names, &use->nameCount, (**tokens)->raw);
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "Id token consumption successful");
+
+	while ((**tokens)->type == DOUBLE_COLON_TOKEN) {
+		logMsg(LOG_INFO, 1, "Attempting '::' token consumption");
+		if ((**tokens)->type != DOUBLE_COLON_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected '::' but got ''%s");
+			exit(-1);
+		}
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "'::' Token Consumption Successful");
+		logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+		if ((**tokens)->type != ID_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+			exit(-1);
+		}
+		pushString(&use->names, &use->nameCount, (**tokens)->raw);
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "Id token consumption successful");
+	}
+
+	def.use = use;
+
+	logMsg(LOG_INFO, 1, "Attempting 'def' token consumption");
+	if ((**tokens)->type != DEF_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'def' but got '%s'", (**tokens)->raw);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'def' token consumption successful");
+
+	switch ((**tokens)->type) {
+		case FUNC_TOKEN: {
+				struct FuncDef *funcDef = memAlloc(sizeof(struct FuncDef));
+				funcDef->base = def;
+				funcDef->base.type = FUNC_DEF;
+				struct Func *ret = memAlloc(sizeof(struct Func));
+	
+				logMsg(LOG_INFO, 1, "Attempting Func Token Consumption");
+				if ((**tokens)->type != FUNC_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' keyword but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++; // consume 'func'
+				logMsg(LOG_INFO, 1, "Func Token Consumption Successful");
+		
+				logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
+				if ((**tokens)->type != ID_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+					logMsg(LOG_INFO, 4, (**tokens)->raw);
+					exit(-1);
+				}
+				ret->name = (**tokens)->raw;
+				(*tokens)++; // consume identifier
+				logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
+			
+				logMsg(LOG_INFO, 1, "Attempting '(' Token Consumption");
+				if ((**tokens)->type != L_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+			
+				// parse and consume params.
+				
+				ret->params = NULL;
+				ret->paramCount = 0;
+			
+				while ((**tokens)->type != R_PAREN_TOKEN) {
+					pushVar(&ret->params, &ret->paramCount, parseVar(tokens));
+				}
+			
+				logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");
+				if ((**tokens)->type != R_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+			
+				logMsg(LOG_INFO, 1, "Attempting '->' Token Consumption");
+				if ((**tokens)->type != ARROW_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '->' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'->' Token Conumption Successful");
+			
+				ret->retType = parseType(tokens);
+				ret->body = NULL;
+				
+				funcDef->func = ret;
+
+				out = (struct Def *) funcDef;
+			}
+			break;
+		default:
+			logMsg(LOG_ERROR, 4, "Unimplemented definition type '%s'", (**tokens)->raw);
+			exit(-1);
+	}
+
+	logMsg(LOG_INFO, 2, "Parsed Def");
+	return out;
+}
+
+void pushDef(struct Def ***buffer, int *count, struct Def *def) {
+	(*count)++;
+	(*buffer) = memRealloc(*buffer, sizeof(struct Def *) * *count);
+	(*buffer)[(*count) - 1 ] = def;
+}
+
 struct Module parseModule(struct Token const *const **tokens) {
 	struct Module module;
 	logMsg(LOG_INFO, 2, "Parsing Module");
@@ -553,6 +687,8 @@ struct Module parseModule(struct Token const *const **tokens) {
 	module.funcs = NULL;
 	module.includes = NULL;
 	module.includeCount = 0;
+	module.defs = NULL;
+	module.defCount = 0;
 	while ((**tokens)->type != EOF_TOKEN) {
 		switch ((**tokens)->type) {
 			case FUNC_TOKEN:
@@ -561,8 +697,11 @@ struct Module parseModule(struct Token const *const **tokens) {
 			case USE_TOKEN:
 				pushUse(&module.includes, &module.includeCount, parseUse(tokens));
 				break;
+			case FROM_TOKEN:
+				pushDef(&module.defs, &module.defCount, parseDef(tokens));
+				break;
 			default:
-				logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' keyword!");
+				logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' keyword not '%s'", (**tokens)->raw);
 				exit(-1);
 		}
 	}

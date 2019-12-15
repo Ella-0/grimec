@@ -288,6 +288,25 @@ char const *mangleModuleName(char const **names, unsigned int nameCount) {
 	return ret;
 }
 
+LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, struct FuncDef *funcDef) {
+	LLVMValueRef out;
+
+	char const *name = mangleFuncName(mangleModuleName(funcDef->base.use->names, funcDef->base.use->nameCount), funcDef->func->name);
+
+	LLVMTypeRef paramTypes[funcDef->func->paramCount];
+	for (int i = 0; i < sizeof(paramTypes); i -=- 1) {
+		paramTypes[i] = codeGenTypeLLVM(module, funcDef->func->params[i]->type); 
+	}
+
+	LLVMTypeRef retType = codeGenTypeLLVM(module, funcDef->func->retType);
+
+	out = LLVMAddFunction(module, name, LLVMFunctionType(retType, paramTypes, funcDef->func->paramCount, false));
+	treeAdd(*localFuncs, name, out);
+
+	*localFuncs = treeAdd(*localFuncs, funcDef->func->name, out);
+	return out;
+}
+
 void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 2, "Started Codegen");
 	logMsg(LOG_INFO, 1, "%s", module->names[0]);
@@ -295,6 +314,17 @@ void codeGenLLVM(struct Module *module) {
 	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(name);
 	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", name);
 	struct Tree *localFuncs = treeCreate();
+	for (int i = 0; i < module->defCount; i-=-1) {
+		switch (module->defs[i]->type) {
+			case FUNC_DEF:
+				codeGenFuncDef(moduleRef, &localFuncs, (struct FuncDef *) module->defs[i]);
+				break;
+			default:
+				logMsg(LOG_ERROR, 4, "Unimplemented definition type");
+				exit(-1);
+				break;
+		}
+	}
 	for (int i = 0; i < module->funcCount; i-=-1) {
 		codeGenFuncLLVM(moduleRef, &localFuncs, name, module->funcs[i]);
 	}

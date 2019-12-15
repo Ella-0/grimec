@@ -148,6 +148,22 @@ struct Use {
 	const char **names;
 };
 
+enum DefType {
+	FUNC_DEF,
+	CLASS_DEF,
+	TRAIT_DEF,
+};
+
+struct Def {
+	enum DefType type;
+	struct Use *use;
+};
+
+struct FuncDef {
+	struct Def base;
+	struct Func *func;
+};
+
 struct Module {
 	unsigned int nameCount;
 	char const **names; // name0::name1::name2
@@ -157,4 +173,7 @@ struct Module {
 
 	unsigned int funcCount;
 	struct Func **funcs;
+
+	unsigned int defCount;
+	struct Def **defs;
 };
