@@ -43,23 +43,47 @@ void treeListDel(struct TreeList *this) {
 
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Type *type) {
 	logMsg(LOG_INFO, 2, "Started Type Code Gen");
+	LLVMTypeRef ret;
+	logMsg(LOG_INFO, 1, "Type Mem location '%d'", ((struct BuildinType *) type)->type);
 	switch (type->type) {
 		case BUILDIN_TYPE:;
 			struct BuildinType *buildinType = (struct BuildinType *) type;
 			switch(buildinType->type) {
 				case INT_BUILDIN_TYPE:
-					return LLVMIntType(32);
+					ret = LLVMIntType(32);
+					break;
+				case STRING_BUILDIN_TYPE:
+					ret = LLVMPointerType(LLVMIntType(8), 0);
+					//ret = LLVMIntType(32);
+					break;
+				case VOID_BUILDIN_TYPE:
+					ret = LLVMVoidType();
+					break;
+				default:
+					logMsg(LOG_ERROR, 4, "Unimplemented Buildin Type");
+					exit(-1);
 			}
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Type!");
 			exit(-1);
 	}
+	logMsg(LOG_INFO, 2, "Finished Type Code Gen");
+	return ret;
 }
 
 LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *lit) {
-	logMsg(LOG_INFO, 1, "%d", lit->val);
+	logMsg(LOG_INFO, 1, "Generating Int Literal with value %d", lit->val);
 	LLVMValueRef ret = LLVMConstInt(LLVMIntType(32), lit->val, false);
+	return ret;
+}
+
+LLVMValueRef codeGenStringLiteralLLVM(LLVMBuilderRef builder, struct StringLiteral *lit) {
+	logMsg(LOG_INFO, 1, "Generating String Literal with value %s", lit->val);
+	LLVMValueRef string = LLVMConstString(lit->val, strlen(lit->val), false);
+	LLVMValueRef ret = LLVMBuildArrayAlloca(builder, LLVMTypeOf(string), LLVMConstInt(LLVMIntType(32), strlen(lit->val)+1, false), "");
+	LLVMBuildStore(builder, string, ret);
+	ret = LLVMBuildBitCast(builder, ret, LLVMPointerType(LLVMIntType(8), false), "");
 	return ret;
 }
 
@@ -67,6 +91,8 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct LiteralExpr *
 	switch (expr->type) {
 		case INT_LITERAL:
 			return codeGenIntLiteralLLVM(builder, (struct IntLiteral *) expr);
+		case STRING_LITERAL:
+			return codeGenStringLiteralLLVM(builder, (struct StringLiteral *) expr);
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Literal Type!");
 			exit(-1);
@@ -112,7 +138,12 @@ LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList
 	if (ret == NULL) {
 		logMsg(LOG_ERROR, 4, "Function '%s' not defined in this scope!", expr->name);
 	}
-	return LLVMBuildCall(builder, ret, NULL, 0, "");
+	LLVMValueRef args[expr->argCount];
+	for (int i = 0; i < expr->argCount; i++) {
+		args[i] = codeGenExprLLVM(builder, varList, funcs, expr->args[i]);
+	}
+
+	return LLVMBuildCall(builder, ret, args, expr->argCount, "");
 }
 
 LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Expr *expr) {
@@ -294,7 +325,7 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 	char const *name = mangleFuncName(mangleModuleName(funcDef->base.use->names, funcDef->base.use->nameCount), funcDef->func->name);
 
 	LLVMTypeRef paramTypes[funcDef->func->paramCount];
-	for (int i = 0; i < sizeof(paramTypes); i -=- 1) {
+	for (int i = 0; i < funcDef->func->paramCount; i -=- 1) {
 		paramTypes[i] = codeGenTypeLLVM(module, funcDef->func->params[i]->type); 
 	}
 
@@ -309,6 +340,10 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 
 void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 2, "Started Codegen");
+
+	LLVMInitializeNativeTarget();
+	LLVMInitializeNativeAsmPrinter();
+
 	logMsg(LOG_INFO, 1, "%s", module->names[0]);
 	char const *name = mangleModuleName(module->names, module->nameCount);
 	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(name);

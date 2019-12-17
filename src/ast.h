@@ -15,6 +15,8 @@ struct Type {
 
 enum BuildinTypeType {
 	INT_BUILDIN_TYPE,
+	STRING_BUILDIN_TYPE,
+	VOID_BUILDIN_TYPE,
 };
 
 struct BuildinType {
@@ -50,6 +52,8 @@ enum LiteralType {
 	NULL_LITERAL,
 	INT_LITERAL,
 	BOOL_LITERAL,
+	STRING_LITERAL,
+	CHAR_LITERAL,
 };
 
 struct LiteralExpr {
@@ -69,6 +73,11 @@ struct IntLiteral {
 struct BoolLiteral {
 	struct LiteralExpr base;
 	int val;
+};
+
+struct StringLiteral {
+	struct LiteralExpr base;
+	char const *val;
 };
 
 enum UnaryOp {

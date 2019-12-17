@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "../lexer/token.h"
 #include "../util/log.h"
 #include "../util/mem.h"
@@ -16,9 +17,16 @@ struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected Identifier but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
-	(*tokens)++;
 	ret->base.type = BUILDIN_TYPE;
-	ret->type = INT_BUILDIN_TYPE;
+	logMsg(LOG_INFO, 1, "Type Id: '%s'", (**tokens)->raw);
+	if (!strcmp((**tokens)->raw, "Int")) {
+		ret->type = INT_BUILDIN_TYPE;
+	} else if (!strcmp((**tokens)->raw, "String")) {
+		ret->type = STRING_BUILDIN_TYPE;
+	} else if (!strcmp((**tokens)->raw, "Void")) {
+		ret->type = VOID_BUILDIN_TYPE;
+	}
+	(*tokens)++;
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 
 	logMsg(LOG_INFO, 2, "Parsed Buildin Type");
@@ -60,6 +68,12 @@ struct Var *parseVar(struct Token const *const **tokens) {
 
 struct Expr *parseExpr(struct Token const *const **tokens);
 
+void pushExpr(struct Expr ***buffer, int *count, struct Expr *expr) {
+	(*count)++;
+	(*buffer) = memRealloc(*buffer, sizeof(struct Expr *) * *count);
+	(*buffer)[(*count) - 1 ] = expr;
+}
+
 // terminals
 
 struct Expr *parseFactor(struct Token const *const **tokens) {
@@ -72,8 +86,18 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 				lit->base.type = INT_LITERAL;
 				lit->val = ((struct IntToken *) (**tokens))->value;
 				ret = (struct Expr *) lit;
-				logMsg(LOG_INFO, 1, "%d", lit->val);
+				logMsg(LOG_INFO, 1, "Created Int Literal with value: %d", lit->val);
 				(*tokens)++; 
+			}
+			break;
+		case STRING_TOKEN: {
+				struct StringLiteral *lit = memAlloc(sizeof(struct StringLiteral));
+				lit->base.base.type = LITERAL_EXPR;
+				lit->base.type = STRING_LITERAL;
+				lit->val = ((struct StringToken *) (**tokens))->value;
+				ret = (struct Expr *) lit;
+				logMsg(LOG_INFO, 1, "Created String Literal with value: %s", lit->val);
+				(*tokens)++;
 			}
 			break;
 		case L_PAREN_TOKEN: {
@@ -110,8 +134,34 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 				callExpr->name = name;
 				callExpr->argCount = 0;
 				callExpr->args = NULL;
+				logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
+				if ((**tokens)->type != L_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
 				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'(' token consumption successful");
+
+				while ((**tokens)->type != R_PAREN_TOKEN) {
+					if (callExpr->argCount != 0) {
+						logMsg(LOG_INFO, 1, "Attempting ',' token consumption");
+						if ((**tokens)->type != COMMA_TOKEN) {
+							logMsg(LOG_ERROR, 4, "Invalid Token: Expected ',' but got '%s'", (**tokens)->raw);
+							exit(-1);
+						}
+						(*tokens)++;
+						logMsg(LOG_INFO, 1, "',' token consumption succesful");
+					}
+					pushExpr(&callExpr->args, &callExpr->argCount, parseExpr(tokens));
+				}
+
+				logMsg(LOG_INFO, 1, "Attempting ')' token conumption");
+				if ((**tokens)->type != R_PAREN_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
 				(*tokens)++;
+				logMsg(LOG_INFO, 1, "')' token consumption successful");
 				ret = (struct Expr *) callExpr;
 
 			} else {
@@ -357,7 +407,11 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 			stmt = parseVarStmt(tokens);
 			break;
 		case ID_TOKEN:
-			stmt = parseAssignStmt(tokens);
+			if (((*tokens)[1])->type != L_PAREN_TOKEN) {
+				stmt = parseAssignStmt(tokens);
+			} else {
+				stmt = parseExprStmt(tokens);
+			}
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unexpected Token: %s", (**tokens)->raw);
@@ -636,7 +690,21 @@ struct Def *parseDef(struct Token const *const **tokens) {
 				ret->paramCount = 0;
 			
 				while ((**tokens)->type != R_PAREN_TOKEN) {
-					pushVar(&ret->params, &ret->paramCount, parseVar(tokens));
+
+					if (ret->paramCount != 0) {
+						logMsg(LOG_INFO, 1, "Attempting ',' token consumption");
+						if ((**tokens)->type != COMMA_TOKEN) {
+							logMsg(LOG_ERROR, 4, "Invalid Token: Expected ',' but got '%s'", (**tokens)->raw);
+						}
+						(*tokens)++;
+						logMsg(LOG_INFO, 1, "',' Token Consumption Successful");
+					}
+
+					struct Type *type = parseType(tokens);
+					struct Var *var = memAlloc(sizeof(struct Var));
+					var->type = type;
+					var->name = "";
+					pushVar(&ret->params, &ret->paramCount, var);
 				}
 			
 				logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");
@@ -645,7 +713,7 @@ struct Def *parseDef(struct Token const *const **tokens) {
 					exit(-1);
 				}
 				(*tokens)++;
-				logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+				logMsg(LOG_INFO, 1, "')' Token Consumption Successful");
 			
 				logMsg(LOG_INFO, 1, "Attempting '->' Token Consumption");
 				if ((**tokens)->type != ARROW_TOKEN) {

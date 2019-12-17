@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <regex.h>
+#include <string.h>
 #include "../util/mem.h"
 #include "../util/log.h"
 #include "token.h"
-#include <stdio.h>
 
 struct Pattern {
 	enum TokenType type;
@@ -192,9 +192,45 @@ struct Token *genDef(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genComma(char const *value) {
+	struct CommaToken *token = memAlloc(sizeof(struct CommaToken));
+	token->base.type = COMMA_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+char const *substring(char const *string, int position, int length) {
+	char *pointer;
+	int c;
+
+	pointer = memAlloc(length+1);
+
+	if (pointer == NULL) {
+		logMsg(LOG_ERROR, 4, "Unable to allocate memory");
+		exit(-1);
+	}
+ 
+	for (c = 0; c < length; c++) {
+		*(pointer+c) = *(string+position-1);      
+		string++;  
+	}
+ 
+	*(pointer+c) = '\0';
+ 
+	return pointer;
+}
+
+struct Token *genString(char const *value) {
+	struct StringToken *token = memAlloc(sizeof(struct StringToken));
+	token->base.type = STRING_TOKEN;
+	token->base.raw = value;
+	token->value = substring(value, 2, strlen(value) - 2);
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
-	{STRING_TOKEN, "", "^\"[a-zA-Z0-9]+\"$", &null},
+	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
 	{ID_TOKEN, "", "^[a-zA-Z_][a-zA-Z0-9_]*$", &genId},
 	{L_PAREN_TOKEN, "", "^\\($", &genLParen},
 	{R_PAREN_TOKEN, "", "^\\)$", &genRParen},
@@ -214,6 +250,7 @@ struct Pattern PATTERNS[] = {
 	{USE_TOKEN, "", "^use$", &genUse},
 	{FROM_TOKEN, "", "^from$", &genFrom},
 	{DEF_TOKEN, "", "^def$", &genDef},
+	{COMMA_TOKEN, "", "^,$", &genComma},
 	{ADD_TOKEN, "", "^\\+$", &genAdd},
 	{SUB_TOKEN, "", "^\\-$", &genSub},
 	{MUL_TOKEN, "", "^\\*$", &genMul},

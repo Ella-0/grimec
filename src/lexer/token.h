@@ -23,6 +23,7 @@ enum TokenType {
 
 	COLON_TOKEN,
 	ARROW_TOKEN,
+	COMMA_TOKEN,
 
 	FUNC_TOKEN,
 	FROM_TOKEN,
@@ -152,5 +153,9 @@ struct FromToken {
 };
 
 struct DefToken {
+	struct Token base;
+};
+
+struct CommaToken {
 	struct Token base;
 };
