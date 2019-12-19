@@ -54,7 +54,7 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Tree **localTypes, stru
 			struct BuildinType *buildinType = (struct BuildinType *) type;
 			switch(buildinType->type) {
 				case INT_BUILDIN_TYPE:
-					ret = LLVMIntType(32);
+					ret = LLVMPointerType(((struct TypeLLVM *) treeLookUp(*localTypes, "Int"))->type, false);
 					break;
 				case STRING_BUILDIN_TYPE:
 					//ret = LLVMPointerType(LLVMIntType(8), 0);
@@ -77,10 +77,22 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Tree **localTypes, stru
 	return ret;
 }
 
-LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct IntLiteral *lit) {
+LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct IntLiteral *lit) {
 	logMsg(LOG_INFO, 1, "Generating Int Literal with value %d", lit->val);
-	LLVMValueRef ret = LLVMConstInt(LLVMIntType(32), lit->val, false);
-	return ret;
+	LLVMValueRef cInt = LLVMConstInt(LLVMIntType(32), lit->val, false);
+	struct TypeLLVM *intType = treeLookUp(*localTypes, "Int");
+	LLVMValueRef intObj = LLVMBuildAlloca(builder, intType->type, "");
+	LLVMBuildCall(builder, intType->init, &intObj, 1, "");
+	LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 2, ""), "");
+
+	LLVMValueRef literalArgs[2] = {intObj, cInt};
+
+	LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(intType->type, false), LLVMIntType(32)};
+
+	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");
+	LLVMBuildCall(builder, litFunc, literalArgs, 2, "");
+	logMsg(LOG_INFO, 1, "Generated Int Literal", lit->val);
+	return intObj;
 }
 
 
@@ -108,7 +120,7 @@ LLVMValueRef codeGenStringLiteralLLVM(LLVMBuilderRef builder, struct Tree **loca
 LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct LiteralExpr *expr) {
 	switch (expr->type) {
 		case INT_LITERAL:
-			return codeGenIntLiteralLLVM(builder, (struct IntLiteral *) expr);
+			return codeGenIntLiteralLLVM(builder, localTypes, (struct IntLiteral *) expr);
 		case STRING_LITERAL:
 			return codeGenStringLiteralLLVM(builder, localTypes, (struct StringLiteral *) expr);
 		default:
@@ -278,7 +290,12 @@ LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, LLVMValueRef func) {
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
-	LLVMBuildRet(builder, LLVMBuildCall(builder, func, NULL, 0, ""));
+	LLVMValueRef intObj = LLVMBuildCall(builder, func, NULL, 0, "");
+	LLVMValueRef cvalFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 3, ""), "");
+	LLVMTypeRef argTypes[1] = {LLVMTypeOf(intObj)};
+	cvalFunc = LLVMBuildBitCast(builder, cvalFunc, LLVMPointerType(LLVMFunctionType(LLVMIntType(32), argTypes, 1, false), false), "");
+	LLVMValueRef cval = LLVMBuildCall(builder, cvalFunc, &intObj, 1, "");
+	LLVMBuildRet(builder, cval);
 	return out;
 }
 
