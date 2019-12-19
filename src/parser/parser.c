@@ -731,6 +731,75 @@ struct Def *parseDef(struct Token const *const **tokens) {
 				out = (struct Def *) funcDef;
 			}
 			break;
+		case CLASS_TOKEN: {
+				struct ClassDef *classDef = memAlloc(sizeof(struct ClassDef));
+				classDef->base = def;
+				classDef->base.type = CLASS_DEF;
+				struct Class *class = memAlloc(sizeof(struct Class));
+				class->padCount = 0;
+				
+				logMsg(LOG_INFO, 1, "Attempting 'class' token consumption");
+				if ((**tokens)->type != CLASS_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'class' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'class' token consumption successful");
+			
+				logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+				if ((**tokens)->type != ID_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				class->name = (**tokens)->raw;
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "Id token consumption successful");
+
+				logMsg(LOG_INFO, 1, "Attempting '{' token consumption");
+				if ((**tokens)->type != L_BRACE_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '{' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'{' token consumption successful");
+
+				logMsg(LOG_INFO, 1, "Attempting pad token consumption");
+				if ((**tokens)->type != PAD_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'pad' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'pad' token consumption successful");
+
+				logMsg(LOG_INFO, 1, "Attempting Int token consumption");
+				if ((**tokens)->type != INT_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected integer but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				class->padCount = ((struct IntToken *) **tokens)->value;
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "Int token consumption successful");
+
+				logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
+				if ((**tokens)->type != SEMI_COLON_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "';' token consumption");
+
+				logMsg(LOG_INFO, 1, "Attempting '}' token consumption");
+				if ((**tokens)->type != R_BRACE_TOKEN) {
+					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '}' but got '%s'", (**tokens)->raw);
+					exit(-1);
+				}
+				(*tokens)++;
+				logMsg(LOG_INFO, 1, "'}' token consumption successful");
+				
+				classDef->class = class;
+				out = (struct Def *) classDef;
+			}
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unimplemented definition type '%s'", (**tokens)->raw);
 			exit(-1);

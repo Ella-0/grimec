@@ -34,6 +34,8 @@ enum TokenType {
 	IF_TOKEN,
 	USE_TOKEN,
 	MOD_TOKEN,
+	CLASS_TOKEN,
+	PAD_TOKEN,
 
 	DOUBLE_COLON_TOKEN,
 	EQUALS_TOKEN,
@@ -157,5 +159,13 @@ struct DefToken {
 };
 
 struct CommaToken {
+	struct Token base;
+};
+
+struct ClassToken {
+	struct Token base;
+};
+
+struct PadToken {
 	struct Token base;
 };

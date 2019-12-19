@@ -228,6 +228,20 @@ struct Token *genString(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genClass(char const *value) {
+	struct ClassToken *token = memAlloc(sizeof(struct ClassToken));
+	token->base.type = CLASS_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
+struct Token *genPad(char const *value) {
+	struct PadToken *token = memAlloc(sizeof(struct PadToken));
+	token->base.type = PAD_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -250,6 +264,8 @@ struct Pattern PATTERNS[] = {
 	{USE_TOKEN, "", "^use$", &genUse},
 	{FROM_TOKEN, "", "^from$", &genFrom},
 	{DEF_TOKEN, "", "^def$", &genDef},
+	{CLASS_TOKEN, "", "^class$", &genClass},
+	{PAD_TOKEN, "", "^pad$", &genPad},
 	{COMMA_TOKEN, "", "^,$", &genComma},
 	{ADD_TOKEN, "", "^\\+$", &genAdd},
 	{SUB_TOKEN, "", "^\\-$", &genSub},

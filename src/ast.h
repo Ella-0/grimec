@@ -157,6 +157,11 @@ struct Use {
 	const char **names;
 };
 
+struct Class {
+	const char *name;
+	unsigned int padCount;
+};
+
 enum DefType {
 	FUNC_DEF,
 	CLASS_DEF,
@@ -166,6 +171,11 @@ enum DefType {
 struct Def {
 	enum DefType type;
 	struct Use *use;
+};
+
+struct ClassDef  {
+	struct Def base;
+	struct Class *class;
 };
 
 struct FuncDef {
