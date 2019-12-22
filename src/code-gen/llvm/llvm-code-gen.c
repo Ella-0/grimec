@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 struct TypeLLVM {
 	LLVMTypeRef type;
 	LLVMValueRef init;
+	struct Tree **methods;
 };
 
 struct TreeList {
@@ -69,6 +71,15 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Tree **localTypes, stru
 					exit(-1);
 			}
 			break;
+		case SIMPLE_TYPE: {
+				struct SimpleType *simpleType = (struct SimpleType *) type;
+				if (!strcmp(simpleType->name, "Void")) {
+					ret = LLVMVoidType();
+				} else {
+					ret = LLVMPointerType(((struct TypeLLVM *) treeLookUp(*localTypes, simpleType->name))->type, false);
+				}
+				break;
+			}
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Type!");
 			exit(-1);
@@ -81,15 +92,17 @@ LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTy
 	logMsg(LOG_INFO, 1, "Generating Int Literal with value %d", lit->val);
 	LLVMValueRef cInt = LLVMConstInt(LLVMIntType(32), lit->val, false);
 	struct TypeLLVM *intType = treeLookUp(*localTypes, "Int");
-	LLVMValueRef intObj = LLVMBuildAlloca(builder, intType->type, "");
-	LLVMBuildCall(builder, intType->init, &intObj, 1, "");
-	LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 2, ""), "");
+	LLVMValueRef intObj = LLVMBuildCall(builder, intType->init, NULL, 0, "");
+
+	LLVMValueRef litFunc = LLVMBuildCall(builder, treeLookUp(*intType->methods, "_literal"), &intObj, 1, "");
+
+	//LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 2, ""), "");
 
 	LLVMValueRef literalArgs[2] = {intObj, cInt};
 
-	LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(intType->type, false), LLVMIntType(32)};
+	/*LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(intType->type, false), LLVMIntType(32)};
 
-	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");
+	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");*/
 	LLVMBuildCall(builder, litFunc, literalArgs, 2, "");
 	logMsg(LOG_INFO, 1, "Generated Int Literal", lit->val);
 	return intObj;
@@ -99,20 +112,19 @@ LLVMValueRef codeGenIntLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTy
 // Spaghetti code fix later
 LLVMValueRef codeGenStringLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct StringLiteral *lit) {
 	logMsg(LOG_INFO, 1, "Generating String Literal with value %s", lit->val);
-	LLVMValueRef string = LLVMConstString(lit->val, strlen(lit->val), false);
-	LLVMValueRef ret = LLVMBuildAlloca(builder, LLVMTypeOf(string), "");
-	LLVMBuildStore(builder, string, ret);
-	struct TypeLLVM *stringType = treeLookUp(*localTypes, "String");
-	LLVMValueRef stringObj = LLVMBuildAlloca(builder, stringType->type, "");
-	LLVMBuildCall(builder, stringType->init, &stringObj, 1, "");
-	LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, stringObj, 2, ""), "");
-	LLVMValueRef cString = LLVMBuildBitCast(builder, ret, LLVMPointerType(LLVMIntType(8), false), "");
-	LLVMValueRef literalArgs[2] = {stringObj, cString};
-	
-	LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(stringType->type, false), LLVMPointerType(LLVMIntType(8), false)};
+	LLVMValueRef cString = LLVMBuildMalloc(builder, LLVMArrayType(LLVMIntType(8), strlen(lit->val) + 1), "");
+	LLVMBuildStore(builder, LLVMConstString(lit->val, strlen(lit->val), false), cString);
+	cString = LLVMBuildBitCast(builder, cString, LLVMPointerType(LLVMIntType(8), false), "");
 
-	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");
+	struct TypeLLVM *stringType = treeLookUp(*localTypes, "String");
+	LLVMValueRef stringObj = LLVMBuildCall(builder, stringType->init, NULL, 0, "");
+
+	LLVMValueRef litFunc = LLVMBuildCall(builder, treeLookUp(*stringType->methods, "_literal"), &stringObj, 1, "");
+
+	LLVMValueRef literalArgs[2] = {stringObj, cString};
+
 	LLVMBuildCall(builder, litFunc, literalArgs, 2, "");
+	
 	logMsg(LOG_INFO, 1, "Generated String Literal");
 	return stringObj;
 }
@@ -285,17 +297,18 @@ char const *mangleTypeName(char const *moduleName, char const *name, unsigned in
 	return ret;
 }
 
-LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, LLVMValueRef func) {
+LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, struct Tree **localTypes, LLVMValueRef func) {
 	LLVMValueRef out = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMIntType(32), NULL, 0, false));
+	struct TypeLLVM *intType = treeLookUp(*localTypes, "Int");
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
 	LLVMValueRef intObj = LLVMBuildCall(builder, func, NULL, 0, "");
-	LLVMValueRef cvalFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 3, ""), "");
+	LLVMValueRef cvalFunc = LLVMBuildCall(builder, treeLookUp(*intType->methods, "_cval"), &intObj, 1, "");
 	LLVMTypeRef argTypes[1] = {LLVMTypeOf(intObj)};
-	cvalFunc = LLVMBuildBitCast(builder, cvalFunc, LLVMPointerType(LLVMFunctionType(LLVMIntType(32), argTypes, 1, false), false), "");
 	LLVMValueRef cval = LLVMBuildCall(builder, cvalFunc, &intObj, 1, "");
 	LLVMBuildRet(builder, cval);
+	//LLVMBuildRet(builder, LLVMConstInt(LLVMIntType(32), 10, false));
 	return out;
 }
 
@@ -343,7 +356,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree **localFuncs, str
 	
 	
 	if (!strcmp(func->name, "main")) {
-		codeGenMainFuncLLVM(module, out);
+		codeGenMainFuncLLVM(module, localTypes, out);
 	}
 	logMsg(LOG_INFO, 2, "Finished Func Code Gen");
 
@@ -384,9 +397,10 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 	return out;
 }
 
-char const *mangleTypeInitName(char const *typeName) {
+char const *mangleTypeMethodName(char const *typeName, char const *methodName) {
 	char *ret = memAlloc(sizeof(char) * 1024);
-	strcat(ret, "_init_");
+	strcat(ret, methodName);
+	strcat(ret, "_");
 	strcat(ret, typeName);
 	return ret;
 }
@@ -408,25 +422,35 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 	LLVMTypeRef pimpl = LLVMStructCreateNamed(LLVMGetGlobalContext(), pimplName);
 	out = LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
 	LLVMTypeRef pointer = LLVMPointerType(out, 0);
-
-	LLVMTypeRef types[classDef->class->padCount + 2];
-	types[0] = LLVMPointerType(pimpl, 0);
-	types[1] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &pointer, 1, false), 0);
-	for (int i = 0; i < classDef->class->padCount; i++) {
-		types[i + 2] = LLVMPointerType(LLVMIntType(8), false);
-	}
-
-
-	LLVMStructSetBody(out, types, classDef->class->padCount + 2, false);
-
 	LLVMDumpType(out);
 
 	logMsg(LOG_INFO, 1, "%d", out);
 
 	struct TypeLLVM *typeStruct = memAlloc(sizeof(struct TypeLLVM));
 	typeStruct->type = out;
-	typeStruct->init = LLVMAddFunction(module, mangleTypeInitName(name), LLVMFunctionType(LLVMVoidType(), &pointer, 1, false));
+	typeStruct->init = LLVMAddFunction(module, mangleTypeMethodName(name, "_init"), LLVMFunctionType(pointer, NULL, 0, false));
+	typeStruct->methods = memAlloc(sizeof(struct Tree *));
+	*typeStruct->methods = treeCreate();
+	LLVMTypeRef demolishRetType = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &pointer, 1, false), false);
+	*typeStruct->methods = treeAdd(*typeStruct->methods, "_demolish", LLVMAddFunction(module, mangleTypeMethodName(name, "_demolish"), LLVMFunctionType(demolishRetType, &pointer, 1, false)));
 
+	if (!strcmp(classDef->class->name, "Int") || !strcmp(classDef->class->name, "String")) {
+
+		LLVMTypeRef cType;
+		if (!strcmp(classDef->class->name, "Int")) {
+			cType = LLVMIntType(32);	
+		} else if (!strcmp(classDef->class->name, "String")) {
+			cType = LLVMPointerType(LLVMIntType(8), false);
+		}
+
+		LLVMTypeRef literalArgTypes[2] = {pointer, cType};
+		LLVMTypeRef literalRetType = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false);
+		*typeStruct->methods = treeAdd(*typeStruct->methods, "_literal", LLVMAddFunction(module, mangleTypeMethodName(name, "_literal"), LLVMFunctionType(literalRetType, &pointer, 1, false)));
+
+		LLVMTypeRef cvalRetType = LLVMPointerType(LLVMFunctionType(cType, &pointer, 1, false), false);
+		*typeStruct->methods = treeAdd(*typeStruct->methods, "_cval", LLVMAddFunction(module, mangleTypeMethodName(name, "_cval"), LLVMFunctionType(cvalRetType, &pointer, 1, false)));
+	
+	}
 	*localTypes = treeAdd(*localTypes, classDef->class->name, typeStruct);
 	return out;
 }

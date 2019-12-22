@@ -6,7 +6,9 @@ struct Var {
 };
 
 enum TypeType {
-	BUILDIN_TYPE
+	BUILDIN_TYPE,
+	SIMPLE_TYPE,
+	GENERIC_TYPE,
 };
 
 struct Type {
@@ -22,6 +24,17 @@ enum BuildinTypeType {
 struct BuildinType {
 	struct Type base;
 	enum BuildinTypeType type;
+};
+
+struct SimpleType {
+	struct Type base;
+	char const *name;
+};
+
+struct GenericType {
+	char const *name;
+	unsigned int typeCount;
+	struct Type **types;
 };
 
 enum ExprType {

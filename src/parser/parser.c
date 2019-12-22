@@ -19,13 +19,9 @@ struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 	}
 	ret->base.type = BUILDIN_TYPE;
 	logMsg(LOG_INFO, 1, "Type Id: '%s'", (**tokens)->raw);
-	if (!strcmp((**tokens)->raw, "Int")) {
-		ret->type = INT_BUILDIN_TYPE;
-	} else if (!strcmp((**tokens)->raw, "String")) {
-		ret->type = STRING_BUILDIN_TYPE;
-	} else if (!strcmp((**tokens)->raw, "Void")) {
+	if (!strcmp((**tokens)->raw, "Void")) {
 		ret->type = VOID_BUILDIN_TYPE;
-	}
+	} 
 	(*tokens)++;
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 
@@ -35,9 +31,21 @@ struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 
 struct Type *parseType(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Type");
-	struct Type *ret = (struct Type *) parseBuildinType(tokens);
+
+	struct SimpleType *ret = memAlloc(sizeof(struct SimpleType));
+	ret->base.type = SIMPLE_TYPE;
+
+	logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
+	if ((**tokens)->type != ID_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected Identifier but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	ret->name = (**tokens)->raw;
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "Id token consumption succesful");
+
 	logMsg(LOG_INFO, 2, "Parsed Type");
-	return ret;
+	return (struct Type *) ret;
 }
 
 struct Var *parseVar(struct Token const *const **tokens) {
@@ -68,7 +76,7 @@ struct Var *parseVar(struct Token const *const **tokens) {
 
 struct Expr *parseExpr(struct Token const *const **tokens);
 
-void pushExpr(struct Expr ***buffer, int *count, struct Expr *expr) {
+void pushExpr(struct Expr ***buffer, unsigned int *count, struct Expr *expr) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Expr *) * *count);
 	(*buffer)[(*count) - 1 ] = expr;
@@ -254,7 +262,7 @@ struct Expr *parseExpr(struct Token const *const **tokens) {
 
 struct Stmt *parseStmt(struct Token const *const **tokens);
 
-void pushStmt(struct Stmt ***buffer, int *count, struct Stmt *stmt) {
+void pushStmt(struct Stmt ***buffer, unsigned int *count, struct Stmt *stmt) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Stmt *) * *count);
 	(*buffer)[(*count) - 1 ] = stmt;
@@ -422,7 +430,7 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 	return stmt;
 }
 
-void pushVar(struct Var ***buffer, int *count, struct Var *var) {
+void pushVar(struct Var ***buffer, unsigned int *count, struct Var *var) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Var *) * *count);
 	(*buffer)[(*count) - 1 ] = var;
@@ -491,13 +499,13 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	return ret;
 }
 
-void pushFunc(struct Func ***buffer, int *count, struct Func *func) {
+void pushFunc(struct Func ***buffer, unsigned int *count, struct Func *func) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Func *) * *count);
 	(*buffer)[(*count) - 1 ] = func;
 }
 
-void pushString(char const ***buffer, int *count, char const *string) {
+void pushString(char const ***buffer, unsigned int *count, char const *string) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(char const *) * *count);
 	(*buffer)[(*count) - 1 ] = string;
@@ -592,7 +600,7 @@ struct Use *parseUse(struct Token const *const **tokens) {
 	return ret;
 }
 
-void pushUse(struct Use ***buffer, int *count, struct Use *use) {
+void pushUse(struct Use ***buffer, unsigned int *count, struct Use *use) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Use *) * *count);
 	(*buffer)[(*count) - 1 ] = use;
@@ -763,31 +771,6 @@ struct Def *parseDef(struct Token const *const **tokens) {
 				(*tokens)++;
 				logMsg(LOG_INFO, 1, "'{' token consumption successful");
 
-				logMsg(LOG_INFO, 1, "Attempting pad token consumption");
-				if ((**tokens)->type != PAD_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'pad' but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "'pad' token consumption successful");
-
-				logMsg(LOG_INFO, 1, "Attempting Int token consumption");
-				if ((**tokens)->type != INT_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected integer but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				class->padCount = ((struct IntToken *) **tokens)->value;
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "Int token consumption successful");
-
-				logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
-				if ((**tokens)->type != SEMI_COLON_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "';' token consumption");
-
 				logMsg(LOG_INFO, 1, "Attempting '}' token consumption");
 				if ((**tokens)->type != R_BRACE_TOKEN) {
 					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '}' but got '%s'", (**tokens)->raw);
@@ -809,7 +792,7 @@ struct Def *parseDef(struct Token const *const **tokens) {
 	return out;
 }
 
-void pushDef(struct Def ***buffer, int *count, struct Def *def) {
+void pushDef(struct Def ***buffer, unsigned int *count, struct Def *def) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Def *) * *count);
 	(*buffer)[(*count) - 1 ] = def;
