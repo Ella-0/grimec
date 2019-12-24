@@ -5,6 +5,7 @@ enum TokenType {
 	EOF_TOKEN,
 	STRING_TOKEN,
 	INT_TOKEN,
+	CHAR_TOKEN,
 	ID_TOKEN,
 
 	ADD_TOKEN,
@@ -55,6 +56,11 @@ struct StringToken {
 struct IntToken {
 	struct Token base;
 	long long value;
+};
+
+struct CharToken {
+	struct Token base;
+	char value;
 };
 
 struct IdToken {

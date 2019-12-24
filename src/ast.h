@@ -83,6 +83,11 @@ struct IntLiteral {
 	int val;
 };
 
+struct CharLiteral {
+	struct LiteralExpr base;
+	char val;
+};
+
 struct BoolLiteral {
 	struct LiteralExpr base;
 	int val;
@@ -172,7 +177,8 @@ struct Use {
 
 struct Class {
 	const char *name;
-	unsigned int padCount;
+	unsigned int funcCount;
+	struct Func **funcs;
 };
 
 enum DefType {

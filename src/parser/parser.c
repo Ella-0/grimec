@@ -108,6 +108,16 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 				(*tokens)++;
 			}
 			break;
+		case CHAR_TOKEN: {
+				struct CharLiteral *lit = memAlloc(sizeof(struct CharLiteral));
+				lit->base.base.type = LITERAL_EXPR;
+				lit->base.type = CHAR_LITERAL;
+				lit->val = ((struct CharToken *) (**tokens))->value;
+				ret = (struct Expr *) lit;
+				logMsg(LOG_INFO, 1, "Cheated Char Literal with value: %c", lit->val);
+				(*tokens)++;
+			}
+			break;
 		case L_PAREN_TOKEN: {
 				logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
 		    		if ((**tokens)->type != L_PAREN_TOKEN) {
@@ -770,6 +780,85 @@ struct Def *parseDef(struct Token const *const **tokens) {
 				}
 				(*tokens)++;
 				logMsg(LOG_INFO, 1, "'{' token consumption successful");
+
+				while ((**tokens)->type != R_BRACE_TOKEN) {
+					switch ((**tokens)->type) {
+						case FUNC_TOKEN: {
+								logMsg(LOG_INFO, 1, "Attempting 'func' token consumption");
+								if ((**tokens)->type != FUNC_TOKEN) {
+									logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' but got '%s'");
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "'func token consumption succesful'");
+
+								logMsg(LOG_INFO, 1, "Attempting Id token consumpion");
+								if ((**tokens)->type != ID_TOKEN) {
+									logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "Id token consumption succesful");
+
+								logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
+								if ((**tokens)->type != L_PAREN_TOKEN) {
+									logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "'(' token consumptoin succesful");
+
+								int count = 0;
+								while ((**tokens)->type != R_PAREN_TOKEN) {
+									if (count != 0) {
+										logMsg(LOG_INFO, 1, "Attempting ',' token comma token consumption");
+										if ((**tokens)->type != COMMA_TOKEN) {
+											logMsg(LOG_ERROR, 4, "Invalid Token : Expected ',' but got '%s'");
+											exit(-1);
+										}
+										(*tokens)++;
+										logMsg(LOG_INFO, 1, "',' Token consumptoin successful");
+									}
+									logMsg(LOG_INFO, 1, "Attempting Id token conumption");
+									if ((**tokens)->type != ID_TOKEN) {
+										logMsg(LOG_INFO, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+										exit(-1);
+									}
+									(*tokens)++;
+									logMsg(LOG_INFO, 1, "Id token consumption successful");
+								}
+
+								logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
+								if ((**tokens)->type != R_PAREN_TOKEN) {
+									logMsg(LOG_ERROR, 1, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "')' token consumption successful");
+
+								logMsg(LOG_INFO, 1, "Attempting '->' token consumption");
+								if ((**tokens)->type != ARROW_TOKEN) {
+									logMsg(LOG_ERROR, 4, "Invalid Token: Expected '->' but got '%s'", (**tokens)->raw);
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "'->' token consumption successful");
+
+								logMsg(LOG_INFO, 1, "Attempting Id token consumption");
+								if ((**tokens)->type != ID_TOKEN) {
+									logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+									exit(-1);
+								}
+								(*tokens)++;
+								logMsg(LOG_INFO, 1, "Id token consumption successful");
+								
+							}
+							break;
+						default:
+							logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' but got '%s'", (**tokens)->raw);
+							exit(-1);
+					}
+				}
 
 				logMsg(LOG_INFO, 1, "Attempting '}' token consumption");
 				if ((**tokens)->type != R_BRACE_TOKEN) {

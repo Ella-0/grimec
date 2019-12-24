@@ -129,12 +129,34 @@ LLVMValueRef codeGenStringLiteralLLVM(LLVMBuilderRef builder, struct Tree **loca
 	return stringObj;
 }
 
+LLVMValueRef codeGenCharLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct CharLiteral *lit) {
+	logMsg(LOG_INFO, 1, "Generating Int Literal with value %d", lit->val);
+	LLVMValueRef cInt = LLVMConstInt(LLVMIntType(8), lit->val, false);
+	struct TypeLLVM *intType = treeLookUp(*localTypes, "Char");
+	LLVMValueRef intObj = LLVMBuildCall(builder, intType->init, NULL, 0, "");
+
+	LLVMValueRef litFunc = LLVMBuildCall(builder, treeLookUp(*intType->methods, "_literal"), &intObj, 1, "");
+
+	//LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 2, ""), "");
+
+	LLVMValueRef literalArgs[2] = {intObj, cInt};
+
+	/*LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(intType->type, false), LLVMIntType(32)};
+
+	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");*/
+	LLVMBuildCall(builder, litFunc, literalArgs, 2, "");
+	logMsg(LOG_INFO, 1, "Generated Int Literal", lit->val);
+	return intObj;
+}
+
 LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct LiteralExpr *expr) {
 	switch (expr->type) {
 		case INT_LITERAL:
 			return codeGenIntLiteralLLVM(builder, localTypes, (struct IntLiteral *) expr);
 		case STRING_LITERAL:
 			return codeGenStringLiteralLLVM(builder, localTypes, (struct StringLiteral *) expr);
+		case CHAR_LITERAL:
+			return codeGenCharLiteralLLVM(builder, localTypes, (struct CharLiteral *) expr);
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Literal Type!");
 			exit(-1);
@@ -434,13 +456,15 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 	LLVMTypeRef demolishRetType = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &pointer, 1, false), false);
 	*typeStruct->methods = treeAdd(*typeStruct->methods, "_demolish", LLVMAddFunction(module, mangleTypeMethodName(name, "_demolish"), LLVMFunctionType(demolishRetType, &pointer, 1, false)));
 
-	if (!strcmp(classDef->class->name, "Int") || !strcmp(classDef->class->name, "String")) {
+	if (!strcmp(classDef->class->name, "Int") || !strcmp(classDef->class->name, "Char") || !strcmp(classDef->class->name, "String")) {
 
 		LLVMTypeRef cType;
 		if (!strcmp(classDef->class->name, "Int")) {
 			cType = LLVMIntType(32);	
 		} else if (!strcmp(classDef->class->name, "String")) {
 			cType = LLVMPointerType(LLVMIntType(8), false);
+		} else if (!strcmp(classDef->class->name, "Char")) {
+			cType = LLVMIntType(8);
 		}
 
 		LLVMTypeRef literalArgTypes[2] = {pointer, cType};
