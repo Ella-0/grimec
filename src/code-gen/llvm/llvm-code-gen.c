@@ -482,8 +482,8 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 2, "Started Codegen");
 
-	LLVMInitializeNativeTarget();
-	LLVMInitializeNativeAsmPrinter();
+	//LLVMInitializeNativeTarget();
+	//LLVMInitializeNativeAsmPrinter();
 
 	logMsg(LOG_INFO, 1, "%s", module->names[0]);
 	char const *name = mangleModuleName(module->names, module->nameCount);
