@@ -10,7 +10,7 @@
 // They will be removed as soon as the compiler is bootstrapped and replaced with classes.
 struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Buildin Type");
-	struct BuildinType *ret = memAlloc(sizeof(struct BuildinType));
+	struct BuildinType *ret = (struct BuildinType *) memAlloc(sizeof(struct BuildinType));
 
 	logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
 	if ((**tokens)->type != ID_TOKEN) {
@@ -32,7 +32,7 @@ struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 struct Type *parseType(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Type");
 
-	struct SimpleType *ret = memAlloc(sizeof(struct SimpleType));
+	struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
 	ret->base.type = SIMPLE_TYPE;
 
 	logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
@@ -50,7 +50,7 @@ struct Type *parseType(struct Token const *const **tokens) {
 
 struct Var *parseVar(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Var");
-	struct Var *ret = memAlloc(sizeof(struct Var));
+	struct Var *ret = (struct Var *) memAlloc(sizeof(struct Var));
 
 	if ((**tokens)->type != ID_TOKEN) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier");
@@ -78,7 +78,7 @@ struct Expr *parseExpr(struct Token const *const **tokens);
 
 void pushExpr(struct Expr ***buffer, unsigned int *count, struct Expr *expr) {
 	(*count)++;
-	(*buffer) = memRealloc(*buffer, sizeof(struct Expr *) * *count);
+	(*buffer) = (struct Expr **) memRealloc(*buffer, sizeof(struct Expr *) * *count);
 	(*buffer)[(*count) - 1 ] = expr;
 }
 
@@ -89,7 +89,7 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 	struct Expr *ret;
 	switch ((**tokens)->type) {
 		case INT_TOKEN: {
-				struct IntLiteral *lit = memAlloc(sizeof(struct IntLiteral));
+				struct IntLiteral *lit =(struct IntLiteral *)  memAlloc(sizeof(struct IntLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = INT_LITERAL;
 				lit->val = ((struct IntToken *) (**tokens))->value;
@@ -99,7 +99,7 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 			}
 			break;
 		case STRING_TOKEN: {
-				struct StringLiteral *lit = memAlloc(sizeof(struct StringLiteral));
+				struct StringLiteral *lit = (struct StringLiteral *) memAlloc(sizeof(struct StringLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = STRING_LITERAL;
 				lit->val = ((struct StringToken *) (**tokens))->value;
@@ -109,7 +109,7 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 			}
 			break;
 		case CHAR_TOKEN: {
-				struct CharLiteral *lit = memAlloc(sizeof(struct CharLiteral));
+				struct CharLiteral *lit = (struct CharLiteral *) memAlloc(sizeof(struct CharLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = CHAR_LITERAL;
 				lit->val = ((struct CharToken *) (**tokens))->value;
@@ -147,7 +147,7 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 			logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 			
 			if ((**tokens)->type == L_PAREN_TOKEN) {
-				struct CallExpr *callExpr = memAlloc(sizeof(struct CallExpr));
+				struct CallExpr *callExpr = (struct CallExpr *) memAlloc(sizeof(struct CallExpr));
 				callExpr->base.type = CALL_EXPR;
 				callExpr->name = name;
 				callExpr->argCount = 0;
@@ -183,15 +183,11 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 				ret = (struct Expr *) callExpr;
 
 			} else {
-				struct VarExpr *varExpr = memAlloc(sizeof(struct VarExpr));
+				struct VarExpr *varExpr = (struct VarExpr *) memAlloc(sizeof(struct VarExpr));
 				varExpr->base.type = VAR_EXPR;
 				varExpr->name = name;
 				ret = (struct Expr *) varExpr;
 			}
-			break;
-		default:
-			logMsg(LOG_ERROR, 4, "Invalid Expression '%s'", (**tokens)->raw);
-			exit(-1);
 			break;
 	}
 
@@ -206,7 +202,7 @@ struct Expr *parseTerm(struct Token const *const **tokens) {
 	while ((**tokens)->type == MUL_TOKEN || (**tokens)->type == DIV_TOKEN) {
 		switch ((**tokens)->type) {
 			case MUL_TOKEN: {
-					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
 					(*tokens)++;
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
@@ -216,7 +212,7 @@ struct Expr *parseTerm(struct Token const *const **tokens) {
 				}
 				break;
 			case DIV_TOKEN: {
-					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
 					(*tokens)++;
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
@@ -241,7 +237,7 @@ struct Expr *parseExpr(struct Token const *const **tokens) {
 	while ((**tokens)->type == ADD_TOKEN || (**tokens)->type == SUB_TOKEN) {
 		switch ((**tokens)->type) {
 			case ADD_TOKEN: {
-					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
 					(*tokens)++;
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
@@ -251,7 +247,7 @@ struct Expr *parseExpr(struct Token const *const **tokens) {
 				}
 				break;
 			case SUB_TOKEN: {
-					struct BinaryExpr *binaryRet = memAlloc(sizeof(struct BinaryExpr));
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
 					(*tokens)++;
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
@@ -274,13 +270,13 @@ struct Stmt *parseStmt(struct Token const *const **tokens);
 
 void pushStmt(struct Stmt ***buffer, unsigned int *count, struct Stmt *stmt) {
 	(*count)++;
-	(*buffer) = memRealloc(*buffer, sizeof(struct Stmt *) * *count);
+	(*buffer) = (struct Stmt **) memRealloc(*buffer, sizeof(struct Stmt *) * *count);
 	(*buffer)[(*count) - 1 ] = stmt;
 }
 
 struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Block Stmt");
-	struct BlockStmt *out = memAlloc(sizeof(struct BlockStmt));
+	struct BlockStmt *out = (struct BlockStmt *) memAlloc(sizeof(struct BlockStmt));
 
 	out->base.type = BLOCK_STMT;
 
@@ -307,7 +303,7 @@ struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
 
 struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Var Stmt");
-	struct VarStmt *out = memAlloc(sizeof(struct VarStmt));
+	struct VarStmt *out = (struct VarStmt *) memAlloc(sizeof(struct VarStmt));
 	out->base.type = VAR_STMT;
 
 	logMsg(LOG_INFO, 1, "Attempting 'var' Token Consumption");
@@ -324,7 +320,7 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 		exit(-1);
 	}
 
-	out->var = memAlloc(sizeof(struct Var));
+	out->var = (struct Var *) memAlloc(sizeof(struct Var));
 
 	out->var->name = (**tokens)->raw;
 	(*tokens)++;
@@ -362,7 +358,7 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 // ID = Expr
 struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Assign Stmt");
-	struct AssignStmt *out = memAlloc(sizeof(struct AssignStmt));
+	struct AssignStmt *out = (struct AssignStmt *) memAlloc(sizeof(struct AssignStmt));
 	out->base.type = ASSIGN_STMT;
 
 	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
@@ -371,7 +367,7 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 		exit(-1);
 	}
 	(*tokens)++;
-	struct Var *var = memAlloc(sizeof(struct Var));
+	struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
 	var->name = ((struct IdToken *)(**tokens))->value;
 	var->name = "ret";
 	out->var = var;
@@ -399,7 +395,7 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 
 struct Stmt *parseExprStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Expr");
-	struct ExprStmt *ret = memAlloc(sizeof(struct ExprStmt));
+	struct ExprStmt *ret = (struct ExprStmt *) memAlloc(sizeof(struct ExprStmt));
 	ret->base.type = EXPR_STMT;
 	ret->expr = parseExpr(tokens);
 
@@ -754,8 +750,7 @@ struct Def *parseDef(struct Token const *const **tokens) {
 				classDef->base = def;
 				classDef->base.type = CLASS_DEF;
 				struct Class *class = memAlloc(sizeof(struct Class));
-				class->padCount = 0;
-				
+			
 				logMsg(LOG_INFO, 1, "Attempting 'class' token consumption");
 				if ((**tokens)->type != CLASS_TOKEN) {
 					logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'class' but got '%s'", (**tokens)->raw);
