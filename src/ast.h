@@ -43,6 +43,7 @@ enum ExprType {
 	BINARY_EXPR,
 	VAR_EXPR,
 	CALL_EXPR,
+	METHOD_CALL_EXPR,
 };
 
 struct Expr {
@@ -51,6 +52,14 @@ struct Expr {
 
 struct CallExpr {
 	struct Expr base;
+	char const *name;
+	unsigned int argCount;
+	struct Expr **args;
+};
+
+struct MethodCallExpr {
+	struct Expr base;
+	struct Expr *lhs;
 	char const *name;
 	unsigned int argCount;
 	struct Expr **args;

@@ -38,6 +38,8 @@ enum TokenType {
 	CLASS_TOKEN,
 	PAD_TOKEN,
 
+	DOT_TOKEN,
+
 	DOUBLE_COLON_TOKEN,
 	EQUALS_TOKEN,
 	SEMI_COLON_TOKEN,
@@ -173,5 +175,9 @@ struct ClassToken {
 };
 
 struct PadToken {
+	struct Token base;
+};
+
+struct DotToken {
 	struct Token base;
 };

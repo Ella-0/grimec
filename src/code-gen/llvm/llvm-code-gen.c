@@ -42,7 +42,7 @@ void treeListPop(struct TreeList *this) {
 
 // does not free list
 void treeListDel(struct TreeList *this) {
-	for (int i = 0; i < this->treeCount; i++) {
+	for (int i = 0; i < (int) this->treeCount; i++) {
 		treeDel((this->trees[i]));
 	}
 }
@@ -203,11 +203,34 @@ LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList
 		logMsg(LOG_ERROR, 4, "Function '%s' not defined in this scope!", expr->name);
 	}
 	LLVMValueRef args[expr->argCount];
-	for (int i = 0; i < expr->argCount; i++) {
+	for (int i = 0; i < (int) expr->argCount; i++) {
 		args[i] = codeGenExprLLVM(builder, varList, funcs, types,  expr->args[i]);
 	}
 
 	return LLVMBuildCall(builder, ret, args, expr->argCount, "");
+}
+
+LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct MethodCallExpr *expr) {
+	logMsg(LOG_INFO, 2, "Building Method Call");
+	LLVMValueRef ret;
+	LLVMValueRef lhs = codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs);
+	LLVMTypeRef lhsType = LLVMGetElementType(LLVMTypeOf(lhs));
+	LLVMDumpType(lhsType);
+	char const *lhsTypeName = LLVMGetStructName(lhsType);
+	logMsg(LOG_INFO, 1, "Name: %s", lhsTypeName);
+	struct TypeLLVM *type = (struct TypeLLVM *) treeLookUp(*types, lhsTypeName);
+	LLVMValueRef func = (LLVMValueRef) treeLookUp(*type->methods, expr->name);
+	func = LLVMBuildCall(builder, func, &lhs, 1, "");
+
+	LLVMValueRef args[expr->argCount+1];
+	args[0] = lhs;
+	for (int i = 0; i < (int) expr->argCount; i++) {
+		args[i + 1] = codeGenExprLLVM(builder, localVarSymbols, funcs, types,  expr->args[i]);
+	}
+	ret = LLVMBuildCall(builder, func, args, expr->argCount + 1, "methodCall");
+
+	logMsg(LOG_INFO, 2, "Build Method Call");
+	return ret;
 }
 
 LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr) {
@@ -228,6 +251,9 @@ LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSym
 			break;
 		case CALL_EXPR:
 			ret = codeGenCallExprLLVM(builder, localVarSymbols, funcs, types, (struct CallExpr *) expr);
+			break;
+		case METHOD_CALL_EXPR:
+			ret = codeGenMethodCallLLVM(builder, localVarSymbols, funcs, types, (struct MethodCallExpr *) expr);
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Expression Type!");
@@ -266,7 +292,7 @@ LLVMValueRef codeGenBlockStmtLLVM(LLVMBuilderRef builder, struct TreeList list, 
 
 	list.trees[list.treeCount - 1] = treeAdd(list.trees[list.treeCount - 1], "ret", NULL);
 
-	for (int i = 0; i < stmt->stmtCount; i++) {
+	for (int i = 0; i < (int) stmt->stmtCount; i++) {
 		logMsg(LOG_INFO, 1, "Building sub stmt #%d", i);
 		codeGenStmtLLVM(builder, list, funcs, types, stmt->stmts[i]);
 	}
@@ -313,7 +339,7 @@ char const *mangleTypeName(char const *moduleName, char const *name, unsigned in
 	strcat(ret, moduleName);
 	strcat(ret, "_");
 	strcat(ret, name);
-	for (int i = 0; i < generics; i++) {
+	for (int i = 0; i < (int) generics; i++) {
 		strcat(ret, "_");
 	}
 	return ret;
@@ -327,7 +353,7 @@ LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, struct Tree **localTypes,
 	LLVMPositionBuilderAtEnd(builder, entry);
 	LLVMValueRef intObj = LLVMBuildCall(builder, func, NULL, 0, "");
 	LLVMValueRef cvalFunc = LLVMBuildCall(builder, treeLookUp(*intType->methods, "_cval"), &intObj, 1, "");
-	LLVMTypeRef argTypes[1] = {LLVMTypeOf(intObj)};
+	//LLVMTypeRef argTypes[1] = {LLVMTypeOf(intObj)};
 	LLVMValueRef cval = LLVMBuildCall(builder, cvalFunc, &intObj, 1, "");
 	LLVMBuildRet(builder, cval);
 	//LLVMBuildRet(builder, LLVMConstInt(LLVMIntType(32), 10, false));
@@ -341,7 +367,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree **localFuncs, str
 	char const *name = mangleFuncName(moduleName, func->name);
 
 	LLVMTypeRef paramTypes[func->paramCount];
-	for (int i = 0; i < sizeof(paramTypes); i -=- 1) {
+	for (int i = 0; i < (int) sizeof(paramTypes); i -=- 1) {
 		paramTypes[i] = codeGenTypeLLVM(module, localTypes, func->params[i]->type); 
 	}
 
@@ -362,7 +388,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree **localFuncs, str
 
 	treeListPush(&list, localVarSymbols);
 
-	for (int i = 0; i < func->paramCount; i -=- 1) {
+	for (int i = 0; i < (int) func->paramCount; i -=- 1) {
 		list.trees[0] = treeAdd(list.trees[0], func->params[i]->name, LLVMGetParam(out, i));
 	}
 
@@ -390,9 +416,9 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree **localFuncs, str
 char const *mangleModuleName(char const **names, unsigned int nameCount) {
 	char *ret = memAlloc(sizeof(char) *1024);
 	ret[0] = '\0';
-	for (int i = 0; i < nameCount; i-=-1) {
+	for (int i = 0; i < (int) nameCount; i-=-1) {
 		strcat(ret, names[i]);
-		if (i != nameCount - 1) {
+		if (i != (int) nameCount - 1) {
 			strcat(ret, "_");
 		}
 	}
@@ -406,7 +432,7 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 	char const *name = mangleFuncName(mangleModuleName(funcDef->base.use->names, funcDef->base.use->nameCount), funcDef->func->name);
 
 	LLVMTypeRef paramTypes[funcDef->func->paramCount];
-	for (int i = 0; i < funcDef->func->paramCount; i -=- 1) {
+	for (int i = 0; i < (int) funcDef->func->paramCount; i -=- 1) {
 		paramTypes[i] = codeGenTypeLLVM(module, localTypes, funcDef->func->params[i]->type); 
 	}
 
@@ -427,6 +453,17 @@ char const *mangleTypeMethodName(char const *typeName, char const *methodName) {
 	return ret;
 }
 
+LLVMTypeRef codeGenMethodDefLLVM(LLVMModuleRef module, struct Tree **localTypes, char const *typeName, struct Func *func, LLVMTypeRef classType) {
+	LLVMTypeRef retType = codeGenTypeLLVM(module, localTypes, func->retType);
+
+	LLVMTypeRef argTypes[func->paramCount+1];
+	argTypes[0] = classType;
+	for (int i = 0; i < (int) func->paramCount; i++) {
+		argTypes[i + 1] = codeGenTypeLLVM(module, localTypes, func->params[i]->type);
+	}
+
+	return LLVMPointerType(LLVMFunctionType(retType, argTypes, func->paramCount + 1, false), false);	
+}
 
 LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, struct ClassDef *classDef) {
 	LLVMTypeRef out;
@@ -441,7 +478,7 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 	strcat(pimplName, "_pimpl_");
 	strcat(pimplName, name);
 
-	LLVMTypeRef pimpl = LLVMStructCreateNamed(LLVMGetGlobalContext(), pimplName);
+	//LLVMTypeRef pimpl = LLVMStructCreateNamed(LLVMGetGlobalContext(), pimplName);
 	out = LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
 	LLVMTypeRef pointer = LLVMPointerType(out, 0);
 	LLVMDumpType(out);
@@ -458,7 +495,7 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 
 	if (!strcmp(classDef->class->name, "Int") || !strcmp(classDef->class->name, "Char") || !strcmp(classDef->class->name, "String")) {
 
-		LLVMTypeRef cType;
+		LLVMTypeRef cType = NULL;
 		if (!strcmp(classDef->class->name, "Int")) {
 			cType = LLVMIntType(32);	
 		} else if (!strcmp(classDef->class->name, "String")) {
@@ -475,7 +512,15 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 		*typeStruct->methods = treeAdd(*typeStruct->methods, "_cval", LLVMAddFunction(module, mangleTypeMethodName(name, "_cval"), LLVMFunctionType(cvalRetType, &pointer, 1, false)));
 	
 	}
+
+	for (int i = 0; i < (int) classDef->class->funcCount; i++) {
+		*typeStruct->methods = treeAdd(*typeStruct->methods, classDef->class->funcs[i]->name, 
+				LLVMAddFunction(module, mangleTypeMethodName(name, classDef->class->funcs[i]->name), 
+					LLVMFunctionType(codeGenMethodDefLLVM(module, localTypes, name, classDef->class->funcs[i], pointer), &pointer, 1, false)));
+	}
+
 	*localTypes = treeAdd(*localTypes, classDef->class->name, typeStruct);
+	*localTypes = treeAdd(*localTypes, name, typeStruct);
 	return out;
 }
 
@@ -491,7 +536,7 @@ void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", name);
 	struct Tree *localFuncs = treeCreate();
 	struct Tree *localTypes = treeCreate();
-	for (int i = 0; i < module->defCount; i-=-1) {
+	for (int i = 0; i < (int) module->defCount; i-=-1) {
 		switch (module->defs[i]->type) {
 			case FUNC_DEF:
 				codeGenFuncDef(moduleRef, &localFuncs, &localTypes, (struct FuncDef *) module->defs[i]);
@@ -505,7 +550,7 @@ void codeGenLLVM(struct Module *module) {
 				break;
 		}
 	}
-	for (int i = 0; i < module->funcCount; i-=-1) {
+	for (int i = 0; i < (int) module->funcCount; i-=-1) {
 		codeGenFuncLLVM(moduleRef, &localFuncs, &localTypes, name, module->funcs[i]);
 	}
 	printf("%s\n", LLVMPrintModuleToString(moduleRef));

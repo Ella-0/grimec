@@ -250,6 +250,13 @@ struct Token *genChar(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genDot(char const *value) {
+	struct DotToken *token = memAlloc(sizeof(struct DotToken));
+	token->base.type = DOT_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -280,6 +287,7 @@ struct Pattern PATTERNS[] = {
 	{MUL_TOKEN, "", "^\\*$", &genMul},
 	{DIV_TOKEN, "", "^\\/$", &genDiv},
 	{CHAR_TOKEN, "", "^'.'$", &genChar},
+	{DOT_TOKEN, "", "^\\.$", &genDot},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 
