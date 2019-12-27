@@ -257,6 +257,13 @@ struct Token *genDot(char const *value) {
 	return (struct Token *) token;
 }
 
+struct Token *genBuild(char const *value) {
+	struct BuildToken *token = memAlloc(sizeof(struct BuildToken));
+	token->base.type = BUILD_TOKEN;
+	token->base.raw = value;
+	return (struct Token *) token;
+}
+
 struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -271,6 +278,7 @@ struct Pattern PATTERNS[] = {
 	{DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},
 	{ARROW_TOKEN, "", "^->$", &genArrow},
 	{FUNC_TOKEN, "", "^func$", &genFunc},
+	{BUILD_TOKEN, "", "^build$", &genBuild},
 	{VAR_TOKEN, "", "^var$", &genVar},
 	{FOR_TOKEN, "", "^for$", &genFor},
 	{EQUALS_TOKEN, "", "^=$", &genEquals},

@@ -691,7 +691,7 @@ struct Func *parseMethodDef(struct Token const *const **tokens) {
 		exit(-1);
 	}
 	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'func token consumption succesful'");
+	logMsg(LOG_INFO, 1, "'func' token consumption succesful'");
 
 	logMsg(LOG_INFO, 1, "Attempting Id token consumpion");
 	if ((**tokens)->type != ID_TOKEN) {
@@ -749,6 +749,71 @@ struct Func *parseMethodDef(struct Token const *const **tokens) {
 	return ret;
 }
 
+struct Func *parseBuildDef(struct Token const *const **tokens) {
+	struct Func *ret = (struct Func *) memAlloc(sizeof(struct Func));	
+
+	logMsg(LOG_INFO, 1, "Attempting 'build' token consumption");
+	if ((**tokens)->type != BUILD_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'build' but got '%s'");
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'build' token consumption succesful'");
+
+	if ((**tokens)->type == ID_TOKEN) {
+		logMsg(LOG_INFO, 1, "Attempting Id token consumpion");
+		if ((**tokens)->type != ID_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
+			exit(-1);
+		}
+		ret->name = (**tokens)->raw;
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "Id token consumption succesful");
+	} else {
+		ret->name = "_build";
+	}
+
+	logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
+	if ((**tokens)->type != L_PAREN_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'(' token consumptoin succesful");
+	
+	ret->paramCount = 0;
+	ret->params = NULL;
+	while ((**tokens)->type != R_PAREN_TOKEN) {
+		if (ret->paramCount != 0) {
+			logMsg(LOG_INFO, 1, "Attempting ',' token comma token consumption");
+			if ((**tokens)->type != COMMA_TOKEN) {
+				logMsg(LOG_ERROR, 4, "Invalid Token : Expected ',' but got '%s'");
+				exit(-1);
+			}
+			(*tokens)++;
+			logMsg(LOG_INFO, 1, "',' Token consumptoin successful");
+		}
+
+		struct Type *type = parseType(tokens);
+		struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
+		var->type = type;
+		var->name = "";
+		pushVar(&ret->params, &ret->paramCount, var);
+	}
+	logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
+	if ((**tokens)->type != R_PAREN_TOKEN) {
+		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+		exit(-1);
+	}
+	(*tokens)++;
+	struct SimpleType *voidType = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
+	voidType->base.type = SIMPLE_TYPE;
+
+	voidType->name = "Void";
+	ret->retType = (struct Type *) voidType;
+	return ret;	
+}
+
 struct ClassDef *parseClassDef(struct Token const *const **tokens) {
 	struct ClassDef *classDef = (struct ClassDef *) memAlloc(sizeof(struct ClassDef));
 
@@ -778,11 +843,18 @@ struct ClassDef *parseClassDef(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 1, "'{' token consumption successful");
 	class->funcs = NULL;
 	class->funcCount = 0;
+	class->builds = NULL;
+	class->buildCount = 0;
 	while ((**tokens)->type != R_BRACE_TOKEN) {
 		switch ((**tokens)->type) {
 			case FUNC_TOKEN: {
 					struct Func *func = parseMethodDef(tokens);
 					pushFunc(&class->funcs, &class->funcCount, func);
+				}
+				break;
+			case BUILD_TOKEN: {
+					struct Func *func = parseBuildDef(tokens);
+					pushFunc(&class->builds, &class->buildCount, func);  
 				}
 				break;
 			default:	

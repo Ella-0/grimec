@@ -13,6 +13,7 @@
 struct TypeLLVM {
 	LLVMTypeRef type;
 	LLVMValueRef init;
+	struct Tree **builds;
 	struct Tree **methods;
 };
 
@@ -454,6 +455,7 @@ char const *mangleTypeMethodName(char const *typeName, char const *methodName) {
 }
 
 LLVMTypeRef codeGenMethodDefLLVM(LLVMModuleRef module, struct Tree **localTypes, char const *typeName, struct Func *func, LLVMTypeRef classType) {
+	logMsg(LOG_INFO, 1, "Creating Method with name '%s'", func->name);
 	LLVMTypeRef retType = codeGenTypeLLVM(module, localTypes, func->retType);
 
 	LLVMTypeRef argTypes[func->paramCount+1];
@@ -490,6 +492,11 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 	typeStruct->init = LLVMAddFunction(module, mangleTypeMethodName(name, "_init"), LLVMFunctionType(pointer, NULL, 0, false));
 	typeStruct->methods = memAlloc(sizeof(struct Tree *));
 	*typeStruct->methods = treeCreate();
+	logMsg(LOG_INFO, 1, "Starting *typeStruct->builds");
+	typeStruct->builds = memAlloc(sizeof(struct Tree *));
+	*typeStruct->builds = treeCreate();
+	//*typeStruct->builds = NULL;
+	logMsg(LOG_INFO, 1, "*typeStruct->builds init");
 	LLVMTypeRef demolishRetType = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &pointer, 1, false), false);
 	*typeStruct->methods = treeAdd(*typeStruct->methods, "_demolish", LLVMAddFunction(module, mangleTypeMethodName(name, "_demolish"), LLVMFunctionType(demolishRetType, &pointer, 1, false)));
 
@@ -513,6 +520,14 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 	
 	}
 
+	logMsg(LOG_WARNING, 1, "classDef->class->buildCount: %u", classDef->class->buildCount);
+
+	for (int i = 0; i < (int) classDef->class->buildCount; i++) {
+		*typeStruct->builds = treeAdd(*typeStruct->builds, classDef->class->builds[i]->name, 
+				LLVMAddFunction(module, mangleTypeMethodName(name, classDef->class->builds[i]->name), 
+					LLVMFunctionType(codeGenMethodDefLLVM(module, localTypes, name, classDef->class->builds[i], pointer), &pointer, 1, false)));
+	}
+
 	for (int i = 0; i < (int) classDef->class->funcCount; i++) {
 		*typeStruct->methods = treeAdd(*typeStruct->methods, classDef->class->funcs[i]->name, 
 				LLVMAddFunction(module, mangleTypeMethodName(name, classDef->class->funcs[i]->name), 
@@ -533,7 +548,7 @@ void codeGenLLVM(struct Module *module) {
 	logMsg(LOG_INFO, 1, "%s", module->names[0]);
 	char const *name = mangleModuleName(module->names, module->nameCount);
 	LLVMModuleRef moduleRef = LLVMModuleCreateWithName(name);
-	logMsg(LOG_INFO, 1, "Created Moule with name '%s'", name);
+	logMsg(LOG_INFO, 1, "Created Module with name '%s'", name);
 	struct Tree *localFuncs = treeCreate();
 	struct Tree *localTypes = treeCreate();
 	for (int i = 0; i < (int) module->defCount; i-=-1) {

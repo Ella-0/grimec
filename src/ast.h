@@ -186,6 +186,8 @@ struct Use {
 
 struct Class {
 	const char *name;
+	unsigned int buildCount;
+	struct Func **builds;
 	unsigned int funcCount;
 	struct Func **funcs;
 };

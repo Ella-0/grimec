@@ -39,6 +39,7 @@ enum TokenType {
 	PAD_TOKEN,
 
 	DOT_TOKEN,
+	BUILD_TOKEN,
 
 	DOUBLE_COLON_TOKEN,
 	EQUALS_TOKEN,
@@ -179,5 +180,9 @@ struct PadToken {
 };
 
 struct DotToken {
+	struct Token base;
+};
+
+struct BuildToken {
 	struct Token base;
 };
