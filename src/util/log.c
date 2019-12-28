@@ -7,7 +7,7 @@
 #define WARNING_COLOUR "\x1b[35m" 
 #define ERROR_COLOUR "\x1b[31m"
 
-int logLevel = 4;
+static int logLevel = 4;
 
 void setLogLevel(int level) {
 	logLevel = level;
@@ -24,19 +24,19 @@ void vlogMsg(enum LogType type, int level, const char *msg, va_list ap) {
 	if (level >= logLevel) {
 		switch (type) {
 			case LOG_INFO:
-				fprintf(stderr, "grimec: " INFO_COLOUR "Info: " NORMAL);
+				(void) fprintf(stderr, "grimec: " INFO_COLOUR "Info: " NORMAL);
 				break;
 			case LOG_WARNING:
-				fprintf(stderr, "grimec: " WARNING_COLOUR "Warning: " NORMAL);
+				(void) fprintf(stderr, "grimec: " WARNING_COLOUR "Warning: " NORMAL);
 				break;
 			case LOG_ERROR:
-				fprintf(stderr, "grimec: " ERROR_COLOUR "Error: " NORMAL);
+				(void) fprintf(stderr, "grimec: " ERROR_COLOUR "Error: " NORMAL);
 				break;
 			default:
 				logMsg(LOG_ERROR, 4, "Invalid Log Level!");
-				exit(-1);
+				exit(EXIT_FAILURE);
 		}
-		vfprintf(stderr, msg, ap);
-		fprintf(stderr, "\n");
+		(void) vfprintf(stderr, msg, ap);
+		(void) fprintf(stderr, "\n");
 	}
 }

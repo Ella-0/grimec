@@ -11,6 +11,6 @@ char const *readFile(char const *path) {
 	fread(string, 1, fsize, f);
 	fclose(f);
 
-	string[fsize] = 0;
+	string[fsize] = '\0';
 	return string;
 }

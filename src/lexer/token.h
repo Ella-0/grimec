@@ -51,6 +51,8 @@ struct Token {
 	const char *raw;
 };
 
+void delTokens(struct Token const *const *tokens);
+
 struct StringToken {
 	struct Token base;
 	const char *value;

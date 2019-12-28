@@ -45,6 +45,10 @@ int main(int argc, char const **argv) {
 		logTokens(tokens);
 		struct Module tree = parse(tokens);
 		codeGenLLVM(&tree);
+		
+		delTokens(tokens);
+		
+		memFree(source);
 	}
 
 	logMsg(LOG_ERROR, 1, "Memory Still Allocated: %d", memLeaks());
