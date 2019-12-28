@@ -1,16 +1,18 @@
+#pragma once
+#include "mem.h"
 //TODO Generic
 
 struct Tree {
-	const char *key;
-	void *value;
-	struct Tree *left;
-	struct Tree *right;
+	char const weak *key;
+	void weak *value;
+	struct Tree strong *left;
+	struct Tree strong *right;
 };
 
-struct Tree *treeCreate();
+struct Tree strong *treeCreate();
 
-struct Tree *treeAdd(struct Tree *tree, const char *key, void *value);
-void treeDel(struct Tree *tree);
+struct Tree strong *treeAdd(struct Tree strong *tree, char const weak *key, void weak *value);
+void treeDel(struct Tree strong *tree);
 
-void *treeLookUp(struct Tree *tree, const char *key); //add function pointer for generics
+void weak *treeLookUp(struct Tree weak *tree, char const weak *key); //add function pointer for generics
 

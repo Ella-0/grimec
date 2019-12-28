@@ -45,8 +45,6 @@ void delExpr(struct Expr *expr) {
 						}
 						break;
 					case STRING_LITERAL: {
-							struct StringLiteral *stringLiteral = (struct StringLiteral *) literalExpr;
-							memFree(stringLiteral->val);
 						}
 						break;
 					default:
@@ -91,7 +89,7 @@ void delStmt(struct Stmt *stmt) {
 
 void delFunc(struct Func *func) {
 	logMsg(LOG_INFO, 1, "Deleting Func");
-	//memFree(func->name);
+
 	for (unsigned int i = 0; i < func->paramCount; i++) {
 		delVar(func->params[i]);
 	}
@@ -141,7 +139,7 @@ void delDef(struct Def *def) {
 void delModule(struct Module module) {
 	logMsg(LOG_INFO, 3, "Deleting AST");
 	for (unsigned int i = 0; i < module.nameCount; i ++) {
-		memFree(module.names[i]);
+		//memFree(module.names[i]);
 	}
 	memFree(module.names);
 	for (unsigned int i = 0; i < module.includeCount; i++) {

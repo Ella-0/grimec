@@ -13,14 +13,14 @@ void setLogLevel(int level) {
 	logLevel = level;
 }
 
-void logMsg(enum LogType type, int level, const char *msg, ...) {
+void logMsg(enum LogType type, int level, char const weak *msg, ...) {
 	va_list arglist;
 	va_start(arglist, msg);
 	vlogMsg(type, level, msg, arglist);
 	va_end(arglist);
 }
 
-void vlogMsg(enum LogType type, int level, const char *msg, va_list ap) {
+void vlogMsg(enum LogType type, int level, char const weak *msg, va_list ap) {
 	if (level >= logLevel) {
 		switch (type) {
 			case LOG_INFO:

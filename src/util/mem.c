@@ -7,11 +7,11 @@
 
 static int leakCounter = 0;
 
-void *memAlloc(size_t size) {
+void strong *memAlloc(size_t size) {
 	leakCounter++;
 	logMsg(LOG_INFO, 0, "Alloc %u", size);
 	
-	void *ret = malloc(size);
+	void strong *ret = malloc(size);
 	if (size > 0) {
 		if (ret == NULL) {
 			logMsg(LOG_ERROR, 4, "Failed To Allocate Memory!");
@@ -22,13 +22,12 @@ void *memAlloc(size_t size) {
 		leakCounter--;
 	}
 	return ret;
-	//return malloc(size);
 }
 
-void *memRealloc(void *mem, size_t size) {
+void strong *memRealloc(void strong *mem, size_t size) {
 	logMsg(LOG_INFO, 0, "Realloc");
 	bool memNull = mem == NULL;
-	void *ret = realloc(mem, size);
+	void strong *ret = realloc(mem, size);
 	if (size > 0) {
 		if (ret == NULL) {
 			logMsg(LOG_ERROR, 4, "Failed To Reallocate Memory!");
@@ -44,7 +43,7 @@ void *memRealloc(void *mem, size_t size) {
 	return ret;
 }
 
-void memFree(void const *mem) {
+void memFree(void const strong *mem) {
 	leakCounter--;
 	free((void *) mem);
 	logMsg(LOG_INFO, 0, "Free");

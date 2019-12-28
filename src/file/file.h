@@ -1,1 +1,1 @@
-char const *readFile(char const *path);
+char const strong *readFile(char const weak *path);

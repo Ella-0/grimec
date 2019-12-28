@@ -1,4 +1,5 @@
 #pragma once
+#include "../util/mem.h"
 
 enum TokenType {
 	NULL_TOKEN = 0,
@@ -48,14 +49,14 @@ enum TokenType {
 
 struct Token {
 	enum TokenType type;
-	const char *raw;
+	char const strong *raw;
 };
 
-void delTokens(struct Token const *const *tokens);
+void delTokens(struct Token const strong *const strong *tokens);
 
 struct StringToken {
 	struct Token base;
-	const char *value;
+	char const strong *value;
 };
 
 struct IntToken {
@@ -70,7 +71,7 @@ struct CharToken {
 
 struct IdToken {
 	struct Token base;
-	const char *value;
+	char const strong *value;
 };
 
 struct LParenToken {
