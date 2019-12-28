@@ -36,7 +36,7 @@ int main(int argc, char const **argv) {
 	while (argc > 1) {
 		char const *fileName = argv[argc - 1];
 		argc--;
-		setLogLevel(0);
+		setLogLevel(1);
 
 		char const *source = readFile(fileName);
 
@@ -46,6 +46,8 @@ int main(int argc, char const **argv) {
 		struct Module tree = parse(tokens);
 		codeGenLLVM(&tree);
 		
+		delModule(tree);
+
 		delTokens(tokens);
 		
 		memFree(source);

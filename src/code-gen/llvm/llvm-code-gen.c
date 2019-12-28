@@ -198,17 +198,30 @@ LLVMValueRef codeGenVarExprLLVM(LLVMBuilderRef builder, struct TreeList localVar
 	return ret;
 }
 
-LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList, struct Tree **funcs, struct Tree **types, struct CallExpr *expr) {
+LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList, struct Tree **funcs, struct Tree **types, struct CallExpr *expr) {	
 	LLVMValueRef ret = treeLookUp(*funcs, expr->name);
 	if (ret == NULL) {
-		logMsg(LOG_ERROR, 4, "Function '%s' not defined in this scope!", expr->name);
+		logMsg(LOG_ERROR, 1, "Function '%s' not defined in this scope!", expr->name);
+		logMsg(LOG_INFO, 1, "Assuming constructor");
+		struct TypeLLVM *classType = treeLookUp(*types, expr->name);
+		LLVMValueRef buildFunc = treeLookUp(*classType->builds, "_build");
+		ret = LLVMBuildCall(builder, classType->init, NULL, 0, "build_value");
+		buildFunc = LLVMBuildCall(builder, buildFunc, &ret, 1, "_impl_build");
+		LLVMValueRef args[expr->argCount + 1];
+		args[0] = ret;
+		for (int i = 0; i < (int) expr->argCount; i++) {
+			args[i + 1] = codeGenExprLLVM(builder, varList, funcs, types,  expr->args[i]);
+		}
+	
+		LLVMBuildCall(builder, buildFunc, args, expr->argCount+1, "");
+	} else {
+		LLVMValueRef args[expr->argCount];
+		for (int i = 0; i < (int) expr->argCount; i++) {
+			args[i] = codeGenExprLLVM(builder, varList, funcs, types,  expr->args[i]);
+		}
+		ret = LLVMBuildCall(builder, ret, args, expr->argCount, "");
 	}
-	LLVMValueRef args[expr->argCount];
-	for (int i = 0; i < (int) expr->argCount; i++) {
-		args[i] = codeGenExprLLVM(builder, varList, funcs, types,  expr->args[i]);
-	}
-
-	return LLVMBuildCall(builder, ret, args, expr->argCount, "");
+	return ret;
 }
 
 LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct MethodCallExpr *expr) {
@@ -221,15 +234,20 @@ LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList local
 	logMsg(LOG_INFO, 1, "Name: %s", lhsTypeName);
 	struct TypeLLVM *type = (struct TypeLLVM *) treeLookUp(*types, lhsTypeName);
 	LLVMValueRef func = (LLVMValueRef) treeLookUp(*type->methods, expr->name);
-	func = LLVMBuildCall(builder, func, &lhs, 1, "");
+	if (func != NULL) {
+		func = LLVMBuildCall(builder, func, &lhs, 1, "");
 
-	LLVMValueRef args[expr->argCount+1];
-	args[0] = lhs;
-	for (int i = 0; i < (int) expr->argCount; i++) {
-		args[i + 1] = codeGenExprLLVM(builder, localVarSymbols, funcs, types,  expr->args[i]);
+		LLVMValueRef args[expr->argCount+1];
+		args[0] = lhs;
+		for (int i = 0; i < (int) expr->argCount; i++) {
+			args[i + 1] = codeGenExprLLVM(builder, localVarSymbols, funcs, types,  expr->args[i]);
+		}
+		ret = LLVMBuildCall(builder, func, args, expr->argCount + 1, "methodCall");
+	} else {
+		ret = NULL;
+		logMsg(LOG_ERROR, 4, "Method '%s' doesn't exist for RHS", expr->name);	
+		exit(EXIT_FAILURE);
 	}
-	ret = LLVMBuildCall(builder, func, args, expr->argCount + 1, "methodCall");
-
 	logMsg(LOG_INFO, 2, "Build Method Call");
 	return ret;
 }

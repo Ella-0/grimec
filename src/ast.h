@@ -227,3 +227,4 @@ struct Module {
 	struct Def **defs;
 };
 
+void delModule(struct Module module);

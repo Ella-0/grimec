@@ -746,12 +746,12 @@ struct Func *parseMethodDef(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 1, "'->' token consumption successful");
 		
 	ret->retType = parseType(tokens);
+	ret->body = NULL;
 	return ret;
 }
 
 struct Func *parseBuildDef(struct Token const *const **tokens) {
 	struct Func *ret = (struct Func *) memAlloc(sizeof(struct Func));	
-
 	logMsg(LOG_INFO, 1, "Attempting 'build' token consumption");
 	if ((**tokens)->type != BUILD_TOKEN) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'build' but got '%s'");
@@ -811,6 +811,7 @@ struct Func *parseBuildDef(struct Token const *const **tokens) {
 
 	voidType->name = "Void";
 	ret->retType = (struct Type *) voidType;
+	ret->body = NULL;
 	return ret;	
 }
 
