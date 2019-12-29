@@ -52,3 +52,9 @@ void memFree(void const strong *mem) {
 int memLeaks() {
 	return leakCounter;
 }
+
+char const strong *heapString(char const weak *stringLiteral) {
+	char strong *ret = memAlloc(sizeof(char) * (strlen(stringLiteral) + 1));
+	strcat(ret, stringLiteral);
+	return ret;
+}

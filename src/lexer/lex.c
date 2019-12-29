@@ -422,9 +422,9 @@ struct Token const *const *lex(const char weak *input) {
 	logMsg(LOG_INFO, 1, "First Token: ");	
 	logMsg(LOG_INFO, 1, (*out)->raw);
 	
-	struct Token *eofToken = malloc(sizeof(struct Token));
+	struct Token strong *eofToken = memAlloc(sizeof(struct Token));
 	eofToken->type = EOF_TOKEN;
-	eofToken->raw = "";
+	eofToken->raw = heapString("");
 	pushToken(&out, &tokenCount, eofToken);
 
 	return out;

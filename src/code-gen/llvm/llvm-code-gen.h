@@ -1,3 +1,3 @@
 #include "../../ast.h"
 
-void codeGenLLVM(struct Module *module);
+void codeGenLLVM(struct Module weak *module);

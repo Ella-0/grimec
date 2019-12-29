@@ -5,18 +5,17 @@
 void delVar(struct Var *var) {
 	logMsg(LOG_INFO, 1, "Deleting Var %s", var->name);
 	memFree(var->type);
-	logMsg(LOG_INFO, 1, "Deleted Var");
 	memFree(var);
 }
 
-void delExpr(struct Expr *expr) {
+void delExpr(struct Expr strong *expr) {
 	logMsg(LOG_INFO, 1, "Deleting Expr");
 	switch (expr->type) {
 		case VAR_EXPR: {	
 			}
 			break;
 		case METHOD_CALL_EXPR: {
-				struct MethodCallExpr *methodCallExpr = (struct MethodCallExpr *) expr;
+				struct MethodCallExpr strong *methodCallExpr = (struct MethodCallExpr strong *) expr;
 				for (unsigned int i = 0; i < methodCallExpr->argCount; i++) {
 					delExpr(methodCallExpr->args[i]);
 				}
@@ -25,7 +24,7 @@ void delExpr(struct Expr *expr) {
 			}
 			break;
 		case CALL_EXPR: {
-				struct CallExpr *callExpr = (struct CallExpr *) expr;
+				struct CallExpr strong *callExpr = (struct CallExpr strong *) expr;
 				for (unsigned int i = 0; i < callExpr->argCount; i++) {
 					delExpr(callExpr->args[i]);
 				}
@@ -33,13 +32,13 @@ void delExpr(struct Expr *expr) {
 			}
 			break;
 		case BINARY_EXPR: {
-				struct BinaryExpr *binaryExpr = (struct BinaryExpr *) expr;
+				struct BinaryExpr strong *binaryExpr = (struct BinaryExpr strong *) expr;
 				delExpr(binaryExpr->lhs);
 				delExpr(binaryExpr->rhs);
 			}
 			break;
 		case LITERAL_EXPR: {
-				struct LiteralExpr *literalExpr = (struct LiteralExpr *) expr;
+				struct LiteralExpr strong *literalExpr = (struct LiteralExpr strong *) expr;
 				switch (literalExpr->type) {
 					case INT_LITERAL: {
 						}
@@ -59,11 +58,11 @@ void delExpr(struct Expr *expr) {
 	memFree(expr);
 }
 
-void delStmt(struct Stmt *stmt) {
+void delStmt(struct Stmt strong *stmt) {
 	logMsg(LOG_INFO, 1, "Deleting Stmt");
 	switch (stmt->type) {
 		case BLOCK_STMT: {
-				struct BlockStmt *blockStmt = (struct BlockStmt *) stmt;
+				struct BlockStmt strong *blockStmt = (struct BlockStmt strong *) stmt;
 				for (unsigned int i = 0; i < blockStmt->stmtCount; i++) {
 					delStmt(blockStmt->stmts[i]);	
 				}
@@ -71,15 +70,22 @@ void delStmt(struct Stmt *stmt) {
 			}
 			break;
 		case EXPR_STMT: {
-				struct ExprStmt *exprStmt = (struct ExprStmt *) stmt;
+				struct ExprStmt strong *exprStmt = (struct ExprStmt strong *) stmt;
 				delExpr(exprStmt->expr);
 			}
 			break;
 		case VAR_STMT: {
-				struct VarStmt *varStmt = (struct VarStmt *) stmt;
+				struct VarStmt strong *varStmt = (struct VarStmt strong *) stmt;
 				delVar(varStmt->var);
 				delExpr(varStmt->init);
 			}
+			break;
+		case ASSIGN_STMT: {
+				struct AssignStmt strong *assignStmt = (struct AssignStmt strong *) stmt;
+				delExpr(assignStmt->init);
+				//delVar(assignStmt->var);
+			}
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unexpected Type when deleting stmt");
 			break;	
@@ -87,7 +93,7 @@ void delStmt(struct Stmt *stmt) {
 	memFree(stmt);
 }
 
-void delFunc(struct Func *func) {
+void delFunc(struct Func strong *func) {
 	logMsg(LOG_INFO, 1, "Deleting Func");
 
 	for (unsigned int i = 0; i < func->paramCount; i++) {
@@ -103,7 +109,7 @@ void delFunc(struct Func *func) {
 	memFree(func);
 }
 
-void delClass(struct Class *class) {
+void delClass(struct Class strong *class) {
 	logMsg(LOG_INFO, 1, "Deleting Class %s: %u, %u", class->name, class->buildCount, class->funcCount);
 	for (unsigned int i = 0; i < class->buildCount; i++) {
 		delFunc(class->builds[i]);
@@ -116,17 +122,23 @@ void delClass(struct Class *class) {
 	memFree(class);
 }
 
-void delDef(struct Def *def) {
+void delUse(struct Use strong *use) {
+	logMsg(LOG_INFO, 1, "Deleting Use");
+	memFree(use->names);
+	memFree(use);
+}
+
+void delDef(struct Def strong *def) {
 	logMsg(LOG_INFO, 1, "Deleting Def");
-	memFree(def->use);
+	delUse(def->use);
 	switch (def->type) {
 		case FUNC_DEF: {
-				struct FuncDef *funcDef = (struct FuncDef *) def;
+				struct FuncDef strong *funcDef = (struct FuncDef strong *) def;
 				delFunc(funcDef->func);
 			}
 			break;
 		case CLASS_DEF: {
-				struct ClassDef *classDef = (struct ClassDef *) def;
+				struct ClassDef strong *classDef = (struct ClassDef strong *) def;
 				delClass(classDef->class);
 			}
 			break;

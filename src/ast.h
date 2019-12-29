@@ -1,8 +1,9 @@
 #pragma once
+#include <stdint.h>
 
 struct Var {
-	const char *name;
-	struct Type *type;
+	const char weak *name;
+	struct Type strong *type;
 };
 
 enum TypeType {
@@ -28,13 +29,13 @@ struct BuildinType {
 
 struct SimpleType {
 	struct Type base;
-	char const *name;
+	char const weak *name;
 };
 
 struct GenericType {
-	char const *name;
+	char const weak *name;
 	unsigned int typeCount;
-	struct Type **types;
+	struct Type strong *strong *types;
 };
 
 enum ExprType {
@@ -52,9 +53,9 @@ struct Expr {
 
 struct CallExpr {
 	struct Expr base;
-	char const *name;
+	char const weak *name;
 	unsigned int argCount;
-	struct Expr **args;
+	struct Expr strong *strong *args;
 };
 
 struct MethodCallExpr {
@@ -62,12 +63,12 @@ struct MethodCallExpr {
 	struct Expr *lhs;
 	char const *name;
 	unsigned int argCount;
-	struct Expr **args;
+	struct Expr strong *strong *args;
 };
 
 struct VarExpr {
 	struct Expr base;
-	char const *name;
+	char const weak *name;
 };
 
 enum LiteralType {
@@ -76,6 +77,7 @@ enum LiteralType {
 	BOOL_LITERAL,
 	STRING_LITERAL,
 	CHAR_LITERAL,
+	BYTE_LITERAL,
 };
 
 struct LiteralExpr {
@@ -92,6 +94,11 @@ struct IntLiteral {
 	int val;
 };
 
+struct ByteLiteral {
+	struct LiteralExpr base;
+	int8_t val;
+};
+
 struct CharLiteral {
 	struct LiteralExpr base;
 	char val;
@@ -104,7 +111,7 @@ struct BoolLiteral {
 
 struct StringLiteral {
 	struct LiteralExpr base;
-	char const *val;
+	char const strong *val;
 };
 
 enum UnaryOp {
@@ -126,9 +133,9 @@ enum BinaryOp {
 
 struct BinaryExpr {
 	struct Expr base;
-	struct Expr *lhs;
+	struct Expr strong *lhs;
 	enum BinaryOp op;
-	struct Expr *rhs;
+	struct Expr strong *rhs;
 };
 
 enum StmtType {
@@ -149,14 +156,14 @@ struct NullStmt {
 
 struct VarStmt {
 	struct Stmt base;
-	struct Var *var;
-	struct Expr *init;
+	struct Var strong *var;
+	struct Expr strong *init;
 };
 
 struct AssignStmt {
 	struct Stmt base;
-	struct Var *var;
-	struct Expr *init;
+	struct Var strong *var;
+	struct Expr strong *init;
 };
 
 struct ExprStmt {
@@ -167,29 +174,29 @@ struct ExprStmt {
 struct BlockStmt {
 	struct Stmt base;
 	unsigned int stmtCount;
-	struct Stmt **stmts;
+	struct Stmt strong *strong *stmts;
 };
 
 struct Func {
-	const char *name;
+	const char weak	*name;
 	unsigned int paramCount;
 	// Different sub types have different sizes
-	struct Var **params;
-	struct Type *retType;
-	struct Stmt *body;
+	struct Var strong *strong *params;
+	struct Type strong *retType;
+	struct Stmt strong *body;
 };
 
 struct Use {
 	unsigned int nameCount;
-	const char **names;
+	const char weak *strong *names;
 };
 
 struct Class {
-	const char *name;
+	const char weak *name;
 	unsigned int buildCount;
-	struct Func **builds;
+	struct Func strong *strong *builds;
 	unsigned int funcCount;
-	struct Func **funcs;
+	struct Func strong *strong *funcs;
 };
 
 enum DefType {
@@ -200,31 +207,31 @@ enum DefType {
 
 struct Def {
 	enum DefType type;
-	struct Use *use;
+	struct Use strong *use;
 };
 
 struct ClassDef  {
 	struct Def base;
-	struct Class *class;
+	struct Class strong *class;
 };
 
 struct FuncDef {
 	struct Def base;
-	struct Func *func;
+	struct Func strong *func;
 };
 
 struct Module {
 	unsigned int nameCount;
-	char const **names; // name0::name1::name2
+	char const weak *strong *names; // name0::name1::name2
 	
 	unsigned int includeCount;
-	struct Use **includes;
+	struct Use strong *strong *includes;
 
 	unsigned int funcCount;
-	struct Func **funcs;
+	struct Func strong *strong *funcs;
 
 	unsigned int defCount;
-	struct Def **defs;
+	struct Def strong *strong *defs;
 };
 
 void delModule(struct Module module);

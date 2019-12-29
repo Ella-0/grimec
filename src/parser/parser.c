@@ -84,9 +84,9 @@ void pushExpr(struct Expr ***buffer, unsigned int *count, struct Expr *expr) {
 
 // terminals
 
-struct Expr *parseFactor(struct Token const *const **tokens) {
+struct Expr strong *parseFactor(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Factor");
-	struct Expr *ret;
+	struct Expr strong *ret;
 	switch ((**tokens)->type) {
 		case INT_TOKEN: {
 				struct IntLiteral *lit =(struct IntLiteral *)  memAlloc(sizeof(struct IntLiteral));
@@ -115,6 +115,16 @@ struct Expr *parseFactor(struct Token const *const **tokens) {
 				lit->val = ((struct CharToken *) (**tokens))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Cheated Char Literal with value: %c", lit->val);
+				(*tokens)++;
+			}
+			break;
+		case BYTE_TOKEN: {
+				struct ByteLiteral strong *lit = (struct ByteLiteral strong *) memAlloc(sizeof(struct ByteLiteral));
+				lit->base.base.type = LITERAL_EXPR;
+				lit->base.type = BYTE_LITERAL;
+				lit->val = ((struct ByteToken weak *) (**tokens))->value;
+				ret = (struct Expr strong *) lit;
+				logMsg(LOG_INFO, 1, "Created Byte Literal with value: %d", lit->val);
 				(*tokens)++;
 			}
 			break;
@@ -491,10 +501,10 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 			stmt = parseVarStmt(tokens);
 			break;
 		case ID_TOKEN:
-			if (((*tokens)[1])->type != L_PAREN_TOKEN) {
-				stmt = parseAssignStmt(tokens);
-			} else {
+			if (((*tokens)[1])->type != EQUALS_TOKEN) {
 				stmt = parseExprStmt(tokens);
+			} else {
+				stmt = parseAssignStmt(tokens);
 			}
 			break;
 		default:
