@@ -4,6 +4,7 @@
 void delTokens(struct Token const strong *const strong *tokens) {
 	struct Token const strong *const weak *pTokens;
 	for (pTokens = tokens; (*pTokens)->type != EOF_TOKEN; pTokens++) {
+		memFree((*pTokens)->raw);
 		switch ((*pTokens)->type) {
 			case STRING_TOKEN: {
 					struct StringToken weak *stringToken = (struct StringToken weak *) *pTokens;
@@ -11,8 +12,7 @@ void delTokens(struct Token const strong *const strong *tokens) {
 				}
 				break;
 			case ID_TOKEN: {
-					struct IdToken weak *idToken = (struct IdToken weak *) *pTokens;
-					memFree(idToken->value);
+					// weak
 				}
 				break;
 

@@ -6,6 +6,7 @@ enum TokenType {
 	EOF_TOKEN,
 	STRING_TOKEN,
 	INT_TOKEN,
+	BYTE_TOKEN,
 	CHAR_TOKEN,
 	ID_TOKEN,
 
@@ -64,6 +65,11 @@ struct IntToken {
 	long long value;
 };
 
+struct ByteToken {
+	struct Token base;
+	long long value;
+};
+
 struct CharToken {
 	struct Token base;
 	char value;
@@ -71,7 +77,7 @@ struct CharToken {
 
 struct IdToken {
 	struct Token base;
-	char const strong *value;
+	char const weak *value; // base.raw owns
 };
 
 struct LParenToken {

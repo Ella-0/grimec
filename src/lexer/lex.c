@@ -8,198 +8,201 @@
 
 struct Pattern {
 	enum TokenType type;
-	const char *partPattern;
-	const char *pattern;
-	struct Token *(*gen)(const char *value);
+	char const strong *partPattern;
+	char const strong *pattern;
+	struct Token strong *(strong *gen)(char const strong *value);
 };
 
-static struct Token *genInt(const char *value) {
-	struct IntToken *token = memAlloc(sizeof(struct IntToken));
+static struct Token strong *genInt(char const strong *value) {
+	struct IntToken strong *token = memAlloc(sizeof(struct IntToken));
 	token->base.type = INT_TOKEN;
 	token->base.raw = value;
 	token->value = atoi(value);
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genId(const char *value) {
-	struct IdToken *token = memAlloc(sizeof(struct IdToken));
+static struct Token strong *genId(char const strong *value) {
+	struct IdToken strong *token = memAlloc(sizeof(struct IdToken));
 	token->base.type = ID_TOKEN;
 	token->base.raw = value;
 	token->value = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genLParen(const char *value) {
-	struct LParenToken *token = memAlloc(sizeof(struct LParenToken));
+static struct Token strong *genLParen(char const strong *value) {
+	struct LParenToken strong *token = memAlloc(sizeof(struct LParenToken));
 	token->base.type = L_PAREN_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genRParen(const char *value) {
-	struct RParenToken *token = memAlloc(sizeof(struct RParenToken));
+static struct Token strong *genRParen(char const strong *value) {
+	struct RParenToken strong *token = memAlloc(sizeof(struct RParenToken));
 	token->base.type = R_PAREN_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genLBracket(const char *value) {
-	struct LBracketToken *token = memAlloc(sizeof(struct LBracketToken));
+static struct Token strong *genLBracket(char const strong *value) {
+	struct LBracketToken strong *token = memAlloc(sizeof(struct LBracketToken));
 	token->base.type = L_BRACKET_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genRBracket(const char *value) {
-	struct RBracketToken *token = memAlloc(sizeof(struct RBracketToken));
+static struct Token strong *genRBracket(char const strong *value) {
+	struct RBracketToken strong *token = memAlloc(sizeof(struct RBracketToken));
 	token->base.type = R_BRACKET_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genLBrace(const char *value) {
+static struct Token strong *genLBrace(char const strong *value) {
 	struct LBraceToken *token = memAlloc(sizeof(struct LBraceToken));
 	token->base.type = L_BRACE_TOKEN;
 	token->base.raw = value;
 	return (struct Token *) token;
 }
 
-static struct Token *genRBrace(const char *value) {
+static struct Token strong *genRBrace(char const strong *value) {
 	struct RBraceToken *token = memAlloc(sizeof(struct RBraceToken));
 	token->base.type = R_BRACE_TOKEN;
 	token->base.raw = value;
 	return (struct Token *) token;
 }
 
-static struct Token *genFunc(const char *value) {
-	struct FuncToken *token = memAlloc(sizeof(struct FuncToken));
+static struct Token strong *genFunc(char const strong *value) {
+	struct FuncToken strong *token = memAlloc(sizeof(struct FuncToken));
 	token->base.type = FUNC_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genVar(const char *value) {
-	struct VarToken *token = memAlloc(sizeof(struct VarToken));
+static struct Token strong *genVar(char const strong *value) {
+	struct VarToken strong *token = memAlloc(sizeof(struct VarToken));
 	token->base.type = VAR_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genFor(const char *value) {
-	struct ForToken *token = memAlloc(sizeof(struct ForToken));
+static struct Token strong *genFor(char const strong *value) {
+	struct ForToken strong *token = memAlloc(sizeof(struct ForToken));
 	token->base.type = FOR_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genColon(char const *value) {
-	struct ColonToken *token = memAlloc(sizeof(struct ColonToken));
+static struct Token strong *genColon(char const strong *value) {
+	struct ColonToken strong *token = memAlloc(sizeof(struct ColonToken));
 	token->base.type = COLON_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genArrow(char const *value) {
-	struct ArrowToken *token = memAlloc(sizeof(struct ArrowToken));
+static struct Token strong *genArrow(char const *value) {
+	struct ArrowToken strong *token = memAlloc(sizeof(struct ArrowToken));
 	token->base.type = ARROW_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *null(const char *value) {
-	logMsg(LOG_ERROR, 4, "Unimplemened Token Matched");
+static struct Token weak *null(char const strong *value) {
+	logMsg(LOG_ERROR, 4, "Unimplemened Token '%s' Matched", value);
+	memFree(value);
 	return NULL;
 }
 
-static struct Token *genWhitespace(const char *value) {
+static struct Token weak *genWhitespace(char const strong *value) {
+	logMsg(LOG_ERROR, 1, "Whitespace '%s'", value);
+	memFree(value);
 	return NULL;
 }
 
-static struct Token *genDoubleColon(char const *value) {
-	struct DoubleColonToken *token = memAlloc(sizeof(struct DoubleColonToken));
+static struct Token strong *genDoubleColon(char const strong *value) {
+	struct DoubleColonToken strong *token = memAlloc(sizeof(struct DoubleColonToken));
 	token->base.type = DOUBLE_COLON_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genEquals(char const *value) {
-	struct EqualsToken *token = memAlloc(sizeof(struct EqualsToken));
+static struct Token strong *genEquals(char const strong *value) {
+	struct EqualsToken strong *token = memAlloc(sizeof(struct EqualsToken));
 	token->base.type = EQUALS_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genSemiColon(char const *value) {
-	struct SemiColonToken *token = memAlloc(sizeof(struct SemiColonToken));
+static struct Token strong *genSemiColon(char const strong *value) {
+	struct SemiColonToken strong *token = memAlloc(sizeof(struct SemiColonToken));
 	token->base.type = SEMI_COLON_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genMod(char const *value) {
-	struct ModToken *token = memAlloc(sizeof(struct ModToken));
+static struct Token strong *genMod(char const strong *value) {
+	struct ModToken strong *token = memAlloc(sizeof(struct ModToken));
 	token->base.type = MOD_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genUse(char const *value) {
-	struct UseToken *token = memAlloc(sizeof(struct UseToken));
+static struct Token strong *genUse(char const strong *value) {
+	struct UseToken strong *token = memAlloc(sizeof(struct UseToken));
 	token->base.type = USE_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 } 
 
-static struct Token *genAdd(char const *value) {
-	struct AddToken *token = memAlloc(sizeof(struct AddToken));
+static struct Token strong *genAdd(char const strong *value) {
+	struct AddToken strong *token = memAlloc(sizeof(struct AddToken));
 	token->base.type = ADD_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genSub(char const *value) {
+static struct Token strong *genSub(char const strong *value) {
 	struct SubToken *token = memAlloc(sizeof(struct SubToken));
 	token->base.type = SUB_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genMul(char const *value) {
-	struct MulToken *token = memAlloc(sizeof(struct MulToken));
+static struct Token strong *genMul(char const strong *value) {
+	struct MulToken strong *token = memAlloc(sizeof(struct MulToken));
 	token->base.type = MUL_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genDiv(char const *value) {
-	struct DivToken *token = memAlloc(sizeof(struct DivToken));
+static struct Token strong *genDiv(char const strong *value) {
+	struct DivToken strong *token = memAlloc(sizeof(struct DivToken));
 	token->base.type = DIV_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genFrom(char const *value) {
-	struct FromToken *token = memAlloc(sizeof(struct FromToken));
+static struct Token strong *genFrom(char const strong *value) {
+	struct FromToken strong *token = memAlloc(sizeof(struct FromToken));
 	token->base.type = FROM_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token  strong *) token;
 }
 
-static struct Token *genDef(char const *value) {
-	struct DefToken *token = memAlloc(sizeof(struct FromToken));
+static struct Token strong *genDef(char const strong *value) {
+	struct DefToken strong *token = memAlloc(sizeof(struct FromToken));
 	token->base.type = DEF_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static struct Token *genComma(char const *value) {
-	struct CommaToken *token = memAlloc(sizeof(struct CommaToken));
+static struct Token strong *genComma(char const strong *value) {
+	struct CommaToken strong *token = memAlloc(sizeof(struct CommaToken));
 	token->base.type = COMMA_TOKEN;
 	token->base.raw = value;
-	return (struct Token *) token;
+	return (struct Token strong *) token;
 }
 
-static char const *substring(char const *string, int position, int length) {
+static char const strong *substring(char const weak *string, int position, int length) {
 	char *pointer;
 	int c;
 
@@ -207,7 +210,7 @@ static char const *substring(char const *string, int position, int length) {
 
 	if (pointer == NULL) {
 		logMsg(LOG_ERROR, 4, "Unable to allocate memory");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
  
 	for (c = 0; c < length; c++) {
@@ -264,6 +267,16 @@ static struct Token *genBuild(char const *value) {
 	return (struct Token *) token;
 }
 
+static struct Token strong *genByte(char const strong *value) {
+	struct ByteToken strong *token = memAlloc(sizeof(struct ByteToken));
+	token->base.type = BYTE_TOKEN;
+	token->base.raw = value;
+	char const strong *subString = substring(value, 1, strlen(value) - 1);
+	token->value = atoi(subString);
+	memFree(subString);
+	return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -296,13 +309,14 @@ static struct Pattern PATTERNS[] = {
 	{DIV_TOKEN, "", "^\\/$", &genDiv},
 	{CHAR_TOKEN, "", "^'.'$", &genChar},
 	{DOT_TOKEN, "", "^\\.$", &genDot},
+	{BYTE_TOKEN, "", "^[0-9_]+B$", &genByte},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 
 struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};
 
 // From regcomp docs
-bool match(const char *string, const char *pattern) {
+bool match(const char weak *string, const char weak *pattern) {
 	int status;
 	regex_t re;
 
@@ -317,7 +331,7 @@ bool match(const char *string, const char *pattern) {
 	return true;
 }
 
-char *pushChar(char **buffer, int *bufferCount, char c) {
+char strong *pushChar(char strong *weak *buffer, int weak *bufferCount, char c) {
 	(*buffer) = memRealloc(*buffer, (*bufferCount + 2) * sizeof(char)); // NULL terminator
 	(*buffer)[*bufferCount] = c;
 	(*bufferCount)++;
@@ -325,7 +339,7 @@ char *pushChar(char **buffer, int *bufferCount, char c) {
 	return *buffer;
 }
 
-struct Token const **pushToken(struct Token const ***buffer, int *bufferCount, struct Token *token) {
+struct Token const **pushToken(struct Token const strong *strong *weak *buffer, int *bufferCount, struct Token strong *token) {
 	if (token == NULL) {
 		logMsg(LOG_INFO, 1, "Not Pushing WhiteSpace");
 	} else {
@@ -338,9 +352,9 @@ struct Token const **pushToken(struct Token const ***buffer, int *bufferCount, s
 	return *buffer;
 }
 
-struct Pattern matchingPattern(const char *buffer) {
+struct Pattern matchingPattern(const char weak *buffer) {
 	struct Pattern ret = NULL_PATTERN;
-	for (int i = 0; i < sizeof(PATTERNS) / sizeof(struct Pattern); i ++) {
+	for (unsigned int i = 0; i < sizeof(PATTERNS) / sizeof(struct Pattern); i ++) {
 		bool thisMatch = match(buffer, PATTERNS[i].pattern);
 		if (thisMatch) {
 			ret = PATTERNS[i];
@@ -349,21 +363,21 @@ struct Pattern matchingPattern(const char *buffer) {
 	return ret;
 }
 
-struct Token const *const *lex(const char *input) {
-	struct Token const **out = NULL;
+struct Token const *const *lex(const char weak *input) {
+	struct Token const strong *strong *out = NULL;
 	int tokenCount = 0;
 	//char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 	//int bufferCount = 0;
 	//buffer[bufferCount] = '\0';
 	
 	while (*input != '\0') {
-		char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
+		char strong *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 		int bufferCount = 0;
 		buffer[bufferCount] = '\0';
 
 		bool matched = false;
 		struct Pattern pattern;
-		struct Token *(*tokenGenFunc)(const char *);
+		//struct Token *(*tokenGenFunc)(const char *);
 	
 		while (!matched) {
 			if (*input == '\0') {
