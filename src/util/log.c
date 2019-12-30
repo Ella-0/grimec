@@ -38,5 +38,6 @@ void vlogMsg(enum LogType type, int level, char const weak *msg, va_list ap) {
 		}
 		(void) vfprintf(stderr, msg, ap);
 		(void) fprintf(stderr, "\n");
+		fflush(stderr);
 	}
 }

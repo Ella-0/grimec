@@ -203,22 +203,15 @@ static struct Token strong *genComma(char const strong *value) {
 }
 
 static char const strong *substring(char const weak *string, int position, int length) {
-	char *pointer;
 	int c;
 
-	pointer = memAlloc(length+1);
-
-	if (pointer == NULL) {
-		logMsg(LOG_ERROR, 4, "Unable to allocate memory");
-		exit(EXIT_FAILURE);
-	}
+	char *pointer = memAlloc(length+1);
  
 	for (c = 0; c < length; c++) {
-		*(pointer+c) = *(string+position-1);      
-		string++;  
+		pointer[c] = string[position + c];
 	}
  
-	*(pointer+c) = '\0';
+	pointer[c] = '\0';
  
 	return pointer;
 }
@@ -227,7 +220,7 @@ static struct Token *genString(char const *value) {
 	struct StringToken *token = memAlloc(sizeof(struct StringToken));
 	token->base.type = STRING_TOKEN;
 	token->base.raw = value;
-	token->value = substring(value, 2, strlen(value) - 2);
+	token->value = substring(value, 1, strlen(value) - 2);
 	return (struct Token *) token;
 }
 
@@ -271,7 +264,7 @@ static struct Token strong *genByte(char const strong *value) {
 	struct ByteToken strong *token = memAlloc(sizeof(struct ByteToken));
 	token->base.type = BYTE_TOKEN;
 	token->base.raw = value;
-	char const strong *subString = substring(value, 1, strlen(value) - 1);
+	char const strong *subString = substring(value, 0, strlen(value) - 1);
 	token->value = atoi(subString);
 	memFree(subString);
 	return (struct Token strong *) token;
@@ -292,6 +285,9 @@ static struct Token strong *genBool(char const strong *value) {
 		token->value = true;
 	} else if (!strcmp(value, "false")) {
 		token->value = false;
+	} else {
+		logMsg(LOG_ERROR, 4, "Invalid Bool match");
+		exit(EXIT_FAILURE);
 	}
 	return (struct Token strong *) token;
 }
@@ -344,9 +340,12 @@ bool match(const char weak *string, const char weak *pattern) {
 	regex_t re;
 
 	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
-		return false;      /* Report error. */
+		logMsg(LOG_ERROR, 4, "Regex Compilation Failure");
+		exit(EXIT_FAILURE);
 	}
+	logMsg(LOG_INFO, 1, "Matching %s %u %s %u", string, strlen(string), pattern, strlen(pattern));
 	status = regexec(&re, string, (size_t) 0, NULL, 0);
+	logMsg(LOG_INFO, 1, "Matched");
 	regfree(&re);
 	if (status != 0) {
 		return false;      /* Report error. */
@@ -378,7 +377,9 @@ struct Token const **pushToken(struct Token const strong *strong *weak *buffer, 
 struct Pattern matchingPattern(const char weak *buffer) {
 	struct Pattern ret = NULL_PATTERN;
 	for (unsigned int i = 0; i < sizeof(PATTERNS) / sizeof(struct Pattern); i ++) {
+		logMsg(LOG_INFO, 1, "Matching Pattern %s %s", PATTERNS[i].pattern, buffer);
 		bool thisMatch = match(buffer, PATTERNS[i].pattern);
+		logMsg(LOG_INFO, 1, "Matched Pattern");
 		if (thisMatch) {
 			ret = PATTERNS[i];
 		}
@@ -386,7 +387,7 @@ struct Pattern matchingPattern(const char weak *buffer) {
 	return ret;
 }
 
-struct Token const *const *lex(const char weak *input) {
+struct Token const strong *const strong *lex(const char weak *input) {
 	struct Token const strong *strong *out = NULL;
 	int tokenCount = 0;
 	//char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
@@ -442,8 +443,7 @@ struct Token const *const *lex(const char weak *input) {
 		pushToken(&out, &tokenCount, pattern.gen(buffer));
 	}
 
-	logMsg(LOG_INFO, 1, "First Token: ");	
-	logMsg(LOG_INFO, 1, (*out)->raw);
+	logMsg(LOG_INFO, 1, "First Token: %s", (*out)->raw);
 	
 	struct Token strong *eofToken = memAlloc(sizeof(struct Token));
 	eofToken->type = EOF_TOKEN;

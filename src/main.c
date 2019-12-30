@@ -33,10 +33,10 @@ void logTokens(struct Token const *const *tokens) {
 
 int main(int argc, char const **argv) {
 
+	setLogLevel(0);
 	while (argc > 1) {
 		char const *fileName = argv[argc - 1];
 		argc--;
-		setLogLevel(1);
 
 		char const *source = readFile(fileName);
 
