@@ -106,7 +106,7 @@ struct CharLiteral {
 
 struct BoolLiteral {
 	struct LiteralExpr base;
-	int val;
+	bool val;
 };
 
 struct StringLiteral {
@@ -144,6 +144,7 @@ enum StmtType {
 	ASSIGN_STMT,
 	EXPR_STMT,
 	BLOCK_STMT,
+	IF_STMT,
 };
 
 struct Stmt {
@@ -168,13 +169,25 @@ struct AssignStmt {
 
 struct ExprStmt {
 	struct Stmt base;
-	struct Expr *expr;
+	struct Expr strong *expr;
 };
 
 struct BlockStmt {
 	struct Stmt base;
 	unsigned int stmtCount;
 	struct Stmt strong *strong *stmts;
+};
+
+struct ConditionalBlock {
+	struct Expr strong *condition;
+	struct Stmt strong *body;
+};
+
+struct IfStmt {
+	struct Stmt base;
+	struct Expr strong *condition;
+	struct Stmt strong *ifBody;
+	struct Stmt strong *elseBody;
 };
 
 struct Func {

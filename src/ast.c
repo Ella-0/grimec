@@ -58,6 +58,14 @@ void delExpr(struct Expr strong *expr) {
 	memFree(expr);
 }
 
+void delStmt(struct Stmt strong *stmt);
+
+void delConditionalBlock(struct ConditionalBlock strong *conditionalBlock) {
+	delExpr(conditionalBlock->condition);
+	delStmt(conditionalBlock->body);
+	memFree(conditionalBlock);
+}
+
 void delStmt(struct Stmt strong *stmt) {
 	logMsg(LOG_INFO, 1, "Deleting Stmt");
 	switch (stmt->type) {
@@ -84,6 +92,15 @@ void delStmt(struct Stmt strong *stmt) {
 				struct AssignStmt strong *assignStmt = (struct AssignStmt strong *) stmt;
 				delExpr(assignStmt->init);
 				//delVar(assignStmt->var);
+			}
+			break;
+		case IF_STMT: {
+				struct IfStmt strong *ifStmt = (struct IfStmt strong *) stmt;
+				delExpr(ifStmt->condition);
+				delStmt(ifStmt->ifBody);
+				if (ifStmt->elseBody != NULL) {
+					delStmt(ifStmt->elseBody);
+				}
 			}
 			break;
 		default:

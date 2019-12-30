@@ -1,0 +1,22 @@
+mod grimec
+
+from std::core def class Int {
+}
+
+from std::core def class Byte {
+}
+
+form std::core def class Char {
+}
+
+from std::core def class String {
+	func charAt(Int) -> Char
+}
+
+func main() -> Int {
+	source = "
+		func main() -> Int {
+			ret = 10;
+		}
+	";
+}

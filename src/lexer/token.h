@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include "../util/mem.h"
 
 enum TokenType {
@@ -9,6 +10,7 @@ enum TokenType {
 	BYTE_TOKEN,
 	CHAR_TOKEN,
 	ID_TOKEN,
+	BOOL_TOKEN,
 
 	ADD_TOKEN,
 	SUB_TOKEN,
@@ -35,6 +37,7 @@ enum TokenType {
 	FOR_TOKEN,
 	WHILE_TOKEN,
 	IF_TOKEN,
+	ELSE_TOKEN,
 	USE_TOKEN,
 	MOD_TOKEN,
 	CLASS_TOKEN,
@@ -58,6 +61,11 @@ void delTokens(struct Token const strong *const strong *tokens);
 struct StringToken {
 	struct Token base;
 	char const strong *value;
+};
+
+struct BoolToken {
+	struct Token base;
+	bool value;
 };
 
 struct IntToken {

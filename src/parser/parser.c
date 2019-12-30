@@ -98,6 +98,16 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				(*tokens)++; 
 			}
 			break;
+		case BOOL_TOKEN: {
+				struct BoolLiteral strong *lit = (struct BoolLiteral strong *) memAlloc(sizeof(struct BoolLiteral)); 
+				lit->base.base.type = LITERAL_EXPR;
+				lit->base.type = BOOL_LITERAL;
+				lit->val = ((struct BoolToken *) (**tokens))->value;
+				ret = (struct Expr *) lit;
+				logMsg(LOG_INFO, 1, "Created Bool Literal with value: %d", lit->val);
+				(*tokens)++;
+			}
+			break;
 		case STRING_TOKEN: {
 				struct StringLiteral *lit = (struct StringLiteral *) memAlloc(sizeof(struct StringLiteral));
 				lit->base.base.type = LITERAL_EXPR;
@@ -490,6 +500,54 @@ struct Stmt *parseExprStmt(struct Token const *const **tokens) {
 	return (struct Stmt *) ret;
 }
 
+struct Stmt strong *parseIfStmt(struct Token const weak *const weak *weak *tokens) {
+	logMsg(LOG_INFO, 2, "Parsing If Stmt");
+	struct IfStmt strong *ret = (struct IfStmt strong *) memAlloc(sizeof(struct IfStmt));
+	ret->base.type = IF_STMT;
+	logMsg(LOG_INFO, 1, "Attempting 'if' Token Consumption");
+	if ((**tokens)->type != IF_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'if' but got '%s'", (**tokens)->raw);
+		exit(EXIT_FAILURE);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'if' token consumption successful");
+
+	logMsg(LOG_INFO, 1, "Attempting '(' Token Consumption");
+	if ((**tokens)->type != L_PAREN_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
+		exit(EXIT_FAILURE);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "'(' token consumption successful");
+
+	ret->condition = parseExpr(tokens);
+
+	logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");
+	if ((**tokens)->type != R_PAREN_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
+		exit(EXIT_FAILURE);
+	}
+	(*tokens)++;
+	logMsg(LOG_INFO, 1, "')' token consumption successful");
+
+	ret->ifBody = parseStmt(tokens);
+
+	if ((**tokens)->type == ELSE_TOKEN) {	
+		logMsg(LOG_INFO, 1, "Attempting 'else' Token Consumption");
+		if ((**tokens)->type != ELSE_TOKEN) {
+			logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'else' but got '%s'", (**tokens)->raw);
+			exit(EXIT_FAILURE);
+		}
+		(*tokens)++;
+		logMsg(LOG_INFO, 1, "'else' token consumption successful");
+
+		ret->elseBody = parseStmt(tokens);
+	} else {
+		ret->elseBody = NULL;
+	}
+	return (struct Stmt strong *) ret;
+}
+
 struct Stmt *parseStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Statement");
 	struct Stmt *stmt;
@@ -506,6 +564,9 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 			} else {
 				stmt = parseAssignStmt(tokens);
 			}
+			break;
+		case IF_TOKEN:
+			stmt = parseIfStmt(tokens);
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unexpected Token: %s", (**tokens)->raw);

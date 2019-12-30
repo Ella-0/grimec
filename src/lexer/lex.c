@@ -277,6 +277,25 @@ static struct Token strong *genByte(char const strong *value) {
 	return (struct Token strong *) token;
 }
 
+static struct Token strong *genIf(char const strong *value) {
+	struct IfToken strong *token = memAlloc(sizeof(struct IfToken));
+	token->base.type = IF_TOKEN;
+	token->base.raw = value;
+	return (struct Token strong *) token;
+}
+
+static struct Token strong *genBool(char const strong *value) {
+	struct BoolToken strong *token = memAlloc(sizeof(struct IfToken));
+	token->base.type = BOOL_TOKEN;
+	token->base.raw = value;
+	if (!strcmp(value, "true")) {
+		token->value = true;
+	} else if (!strcmp(value, "false")) {
+		token->value = false;
+	}
+	return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -294,6 +313,9 @@ static struct Pattern PATTERNS[] = {
 	{BUILD_TOKEN, "", "^build$", &genBuild},
 	{VAR_TOKEN, "", "^var$", &genVar},
 	{FOR_TOKEN, "", "^for$", &genFor},
+	{IF_TOKEN, "", "^if$", &genIf},
+	{BOOL_TOKEN, "", "^true$", &genBool},
+	{BOOL_TOKEN, "", "^false$", &genBool},
 	{EQUALS_TOKEN, "", "^=$", &genEquals},
 	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},
 	{MOD_TOKEN, "", "^mod$", &genMod},
@@ -310,10 +332,11 @@ static struct Pattern PATTERNS[] = {
 	{CHAR_TOKEN, "", "^'.'$", &genChar},
 	{DOT_TOKEN, "", "^\\.$", &genDot},
 	{BYTE_TOKEN, "", "^[0-9_]+B$", &genByte},
+	//{1000, "", "^//.*\n", &genWhitespace},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 
-struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL};
+struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL, &null};
 
 // From regcomp docs
 bool match(const char weak *string, const char weak *pattern) {
