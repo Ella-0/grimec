@@ -8,11 +8,48 @@
 static int leakCount = 0;
 static size_t leakSize = 0;
 
-static const int METADATA_SIZE = 0;
+static const int METADATA_SIZE = 0; // WORKS TODO fix memleak
 
-static const int PADDING_SIZE = 00;
+static const int PADDING_SIZE = 0;
 
 void strong *memAlloc(size_t size) {
+	void *raw = malloc(METADATA_SIZE + size + PADDING_SIZE);
+	memset(raw, 0, METADATA_SIZE);
+	return raw + METADATA_SIZE;
+}
+
+void strong *memRealloc(void strong *mem, size_t size) {
+	if (mem == NULL) {
+		return memAlloc(size);
+	}
+	void strong *raw = (void *) mem - METADATA_SIZE;
+	for (unsigned int i = 0; i < METADATA_SIZE; i++) {
+		int b = (int) *((char *) raw + i);
+		if (b != 0) {
+			logMsg(LOG_INFO, 0, "%u, %u", i, b);
+			exit(EXIT_FAILURE);
+		}
+	}
+	return realloc(raw, METADATA_SIZE + size + PADDING_SIZE) + METADATA_SIZE;
+}
+
+void memFree(void const strong *mem) {
+	if (mem == NULL) {
+		return;
+	}
+	void strong *raw = (void *) mem - METADATA_SIZE;
+	for (unsigned int i = 0; i < METADATA_SIZE; i++) {
+		int b = (int) *((char *) raw + i);
+		if (b != 0) {
+			logMsg(LOG_INFO, 0, "%u, %u", i, b);
+			exit(EXIT_FAILURE);
+		}
+	}
+	free(raw);
+}
+
+
+void strong *xmemAlloc(size_t size) {
 	logMsg(LOG_INFO, 0, "Alloc %u", size);
 	
 	size_t strong *raw = (size_t strong *) malloc(METADATA_SIZE * sizeof(size_t) + size + PADDING_SIZE);
@@ -24,19 +61,19 @@ void strong *memAlloc(size_t size) {
 	leakCount++;
 	leakSize += size;
 
-	//*raw = size;
+	*raw = size;
 	void strong *ret = (void strong *) (raw + METADATA_SIZE);
 	//memset(ret, 0xff, size);
 	return ret;
 }
 
-void strong *memRealloc(void strong *mem, size_t size) {
+void strong *xmemRealloc(void strong *mem, size_t size) {
 	if (mem == NULL) {
 		return memAlloc(size);
 	}
 	
 	size_t strong *raw = ((size_t strong *) mem) - METADATA_SIZE;
-	size_t oldSize = 0;// *raw;	
+	size_t oldSize = *raw;	
 	
 	logMsg(LOG_INFO, 0, "Realloc %u -> %u", oldSize, size);
 	
@@ -48,7 +85,7 @@ void strong *memRealloc(void strong *mem, size_t size) {
 		exit(EXIT_FAILURE);
 	}
 
-	//*raw = size;
+	*raw = size;
 	void strong *ret = (void strong *) (raw + METADATA_SIZE);
 	if (size >= oldSize) {
 		//memset(ret + oldsize, 0xff, size - oldSize);
@@ -56,9 +93,12 @@ void strong *memRealloc(void strong *mem, size_t size) {
 	return ret;
 }
 
-void memFree(void const strong *mem) {
+void xmemFree(void const strong *mem) {
+	if (mem == NULL) {
+		return;
+	}
 	size_t strong *raw = ((size_t strong *) mem) - METADATA_SIZE;
-	size_t oldSize = 0;//*raw;
+	size_t oldSize = *raw;
 	
 	logMsg(LOG_INFO, 0, "Free %u", oldSize);
 
