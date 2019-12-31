@@ -25,7 +25,7 @@ void strong *memRealloc(void strong *mem, size_t size) {
 	for (unsigned int i = 0; i < METADATA_SIZE; i++) {
 		int b = (int) *((char *) raw + i);
 		if (b != 0) {
-			logMsg(LOG_INFO, 0, "memAlloc metadata corruption detected in memRealloc %u, %u", i, b);
+			logMsg(LOG_ERROR, 0, "memAlloc metadata corruption detected in memRealloc %u, %u", i, b);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -40,7 +40,7 @@ void memFree(void const strong *mem) {
 	for (unsigned int i = 0; i < METADATA_SIZE; i++) {
 		int b = (int) *((char *) raw + i);
 		if (b != 0) {
-			logMsg(LOG_INFO, 0, "%u, %u", i, b);
+			logMsg(LOG_ERROR, 0, "memAlloc metadata corruption detected in memRealloc %u, %u", i, b);
 			exit(EXIT_FAILURE);
 		}
 	}
