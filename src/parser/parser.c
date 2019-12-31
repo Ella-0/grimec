@@ -458,6 +458,7 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 	}
 	struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
 	var->name = ((struct IdToken *)(**tokens))->value;
+	var->type = memAlloc(0);
 	//var->name = heapString("ret");
 	out->var = var;
 	(*tokens)++;

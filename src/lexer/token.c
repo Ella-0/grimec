@@ -22,6 +22,7 @@ void delTokens(struct Token const strong *const strong *tokens) {
 		}
 		memFree(*pTokens);
 	}
+	memFree((*pTokens)->raw);
 	memFree(*pTokens);
 	memFree(tokens);
 }

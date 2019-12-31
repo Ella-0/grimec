@@ -7,17 +7,17 @@
 static int leakCount = 0;
 static size_t leakSize = 0;
 
-static const int METADATA_SIZE = sizeof(size_t); // WORKS TODO fix memleak
+static const int METADATA_SIZE = sizeof(size_t);
 
 static const int PADDING_SIZE = 0;
 
-void strong *memAlloc(size_t size) {
+void strong *xmemAlloc(size_t size) {
 	void *raw = malloc(METADATA_SIZE + size + PADDING_SIZE);
 	memset(raw, 0, METADATA_SIZE);
 	return raw + METADATA_SIZE;
 }
 
-void strong *memRealloc(void strong *mem, size_t size) {
+void strong *xmemRealloc(void strong *mem, size_t size) {
 	if (mem == NULL) {
 		return memAlloc(size);
 	}
@@ -32,7 +32,7 @@ void strong *memRealloc(void strong *mem, size_t size) {
 	return realloc(raw, METADATA_SIZE + size + PADDING_SIZE) + METADATA_SIZE;
 }
 
-void memFree(void const strong *mem) {
+void xmemFree(void const strong *mem) {
 	if (mem == NULL) {
 		return;
 	}
@@ -48,7 +48,7 @@ void memFree(void const strong *mem) {
 }
 
 
-void strong *xmemAlloc(size_t size) {
+void strong *memAlloc(size_t size) {
 	logMsg(LOG_INFO, 0, "Alloc %u", size);
 	
 	size_t strong *raw = (size_t strong *) malloc(METADATA_SIZE * sizeof(size_t) + size + PADDING_SIZE);
@@ -66,7 +66,7 @@ void strong *xmemAlloc(size_t size) {
 	return ret;
 }
 
-void strong *xmemRealloc(void strong *mem, size_t size) {
+void strong *memRealloc(void strong *mem, size_t size) {
 	if (mem == NULL) {
 		return memAlloc(size);
 	}
@@ -92,7 +92,7 @@ void strong *xmemRealloc(void strong *mem, size_t size) {
 	return ret;
 }
 
-void xmemFree(void const strong *mem) {
+void memFree(void const strong *mem) {
 	if (mem == NULL) {
 		return;
 	}
@@ -109,6 +109,10 @@ void xmemFree(void const strong *mem) {
 
 int memLeaks() {
 	return leakCount;
+}
+
+void memLog() {
+	logMsg(LOG_ERROR, 1, "Blocks Still Allocated: %d taking %d bytes", leakCount, leakSize);
 }
 
 char const strong *heapString(char const weak *stringLiteral) {

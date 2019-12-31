@@ -91,7 +91,7 @@ void delStmt(struct Stmt strong *stmt) {
 		case ASSIGN_STMT: {
 				struct AssignStmt strong *assignStmt = (struct AssignStmt strong *) stmt;
 				delExpr(assignStmt->init);
-				//delVar(assignStmt->var);
+				delVar(assignStmt->var);
 			}
 			break;
 		case IF_STMT: {

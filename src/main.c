@@ -52,7 +52,8 @@ int main(int argc, char const **argv) {
 		
 		memFree(source);
 	}
+	
+	memLog();
 
-	logMsg(LOG_ERROR, 1, "Memory Still Allocated: %d", memLeaks());
 	return 0;
 }
