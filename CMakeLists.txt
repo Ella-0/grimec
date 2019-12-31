@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 project(grimec)
 
 set(CMAKE_C_COMPILER /usr/bin/clang)
+set(CMAKE_C_FLAGS -fno-strict-aliasing)
 
 find_package(LLVM REQUIRED CONFIG)
 

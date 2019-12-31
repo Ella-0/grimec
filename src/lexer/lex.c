@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <regex.h>
 #include <string.h>
+#include <assert.h>
 #include "../util/mem.h"
 #include "../util/log.h"
 #include "token.h"
@@ -343,9 +344,7 @@ bool match(const char weak *string, const char weak *pattern) {
 		logMsg(LOG_ERROR, 4, "Regex Compilation Failure");
 		exit(EXIT_FAILURE);
 	}
-	logMsg(LOG_INFO, 1, "Matching %s %u %s %u", string, strlen(string), pattern, strlen(pattern));
 	status = regexec(&re, string, (size_t) 0, NULL, 0);
-	logMsg(LOG_INFO, 1, "Matched");
 	regfree(&re);
 	if (status != 0) {
 		return false;      /* Report error. */
@@ -354,7 +353,7 @@ bool match(const char weak *string, const char weak *pattern) {
 }
 
 char strong *pushChar(char strong *weak *buffer, int weak *bufferCount, char c) {
-	(*buffer) = memRealloc(*buffer, (*bufferCount + 2) * sizeof(char)); // NULL terminator
+	(*buffer) = (char strong *) memRealloc(*buffer, (*bufferCount + 2) * sizeof(char)); // NULL terminator
 	(*buffer)[*bufferCount] = c;
 	(*bufferCount)++;
 	(*buffer)[*bufferCount] = '\0';
@@ -365,11 +364,15 @@ struct Token const **pushToken(struct Token const strong *strong *weak *buffer, 
 	if (token == NULL) {
 		logMsg(LOG_INFO, 1, "Not Pushing WhiteSpace");
 	} else {
-		logMsg(LOG_INFO, 1, "Pushing Token %s", token->raw);
+		logMsg(LOG_INFO, 1, "Pushing Token %s %u", token->raw, *bufferCount);
+		struct Token const strong *strong *old = *buffer;
+		//memFree(old);
+		//(*buffer) = memAlloc((*bufferCount + 1) * sizeof(struct Token *));
+		//memcpy(*buffer, old, *bufferCount * sizeof(struct Token *));
 		(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
 		(*buffer)[*bufferCount] = token;
 		(*bufferCount)++;
-		logMsg(LOG_INFO, 1, "Pushed Token");
+		logMsg(LOG_INFO, 1, "Pushed Token %u", (*bufferCount));
 	}
 	return *buffer;
 }
@@ -377,9 +380,7 @@ struct Token const **pushToken(struct Token const strong *strong *weak *buffer, 
 struct Pattern matchingPattern(const char weak *buffer) {
 	struct Pattern ret = NULL_PATTERN;
 	for (unsigned int i = 0; i < sizeof(PATTERNS) / sizeof(struct Pattern); i ++) {
-		logMsg(LOG_INFO, 1, "Matching Pattern %s %s", PATTERNS[i].pattern, buffer);
 		bool thisMatch = match(buffer, PATTERNS[i].pattern);
-		logMsg(LOG_INFO, 1, "Matched Pattern");
 		if (thisMatch) {
 			ret = PATTERNS[i];
 		}
@@ -433,7 +434,7 @@ struct Token const strong *const strong *lex(const char weak *input) {
 				pattern = testingPattern;
 			}
 		}
-
+		assert(bufferCount > 0);
 		buffer[bufferCount - 1] = '\0';
 		input--;
 			
@@ -443,12 +444,13 @@ struct Token const strong *const strong *lex(const char weak *input) {
 		pushToken(&out, &tokenCount, pattern.gen(buffer));
 	}
 
-	logMsg(LOG_INFO, 1, "First Token: %s", (*out)->raw);
 	
 	struct Token strong *eofToken = memAlloc(sizeof(struct Token));
 	eofToken->type = EOF_TOKEN;
 	eofToken->raw = heapString("");
 	pushToken(&out, &tokenCount, eofToken);
+
+	logMsg(LOG_INFO, 1, "End of lex");
 
 	return out;
 }

@@ -4,7 +4,6 @@
 #include "log.h"
 #include "mem.h"
 
-
 static int leakCount = 0;
 static size_t leakSize = 0;
 
@@ -14,7 +13,7 @@ static const int PADDING_SIZE = 0;
 
 void strong *memAlloc(size_t size) {
 	void *raw = malloc(METADATA_SIZE + size + PADDING_SIZE);
-	memset(raw, 0, METADATA_SIZE);
+	//memset(raw, 0, METADATA_SIZE);
 	return raw + METADATA_SIZE;
 }
 
@@ -45,7 +44,7 @@ void memFree(void const strong *mem) {
 			exit(EXIT_FAILURE);
 		}
 	}
-	free(raw);
+//	free(raw);
 }
 
 
@@ -114,6 +113,6 @@ int memLeaks() {
 
 char const strong *heapString(char const weak *stringLiteral) {
 	char strong *ret = memAlloc(sizeof(char) * (strlen(stringLiteral) + 1));
-	strcat(ret, stringLiteral);
+	strcpy(ret, stringLiteral);
 	return ret;
 }

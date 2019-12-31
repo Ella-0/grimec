@@ -39,9 +39,9 @@ int main(int argc, char const **argv) {
 		argc--;
 
 		char const *source = readFile(fileName);
-
+	
 		struct Token const *const *tokens = lex(source);
-
+		
 		logTokens(tokens);
 		struct Module tree = parse(tokens);
 		codeGenLLVM(&tree);
