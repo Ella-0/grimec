@@ -7,13 +7,13 @@
 static int leakCount = 0;
 static size_t leakSize = 0;
 
-static const int METADATA_SIZE = 0; // WORKS TODO fix memleak
+static const int METADATA_SIZE = sizeof(size_t); // WORKS TODO fix memleak
 
 static const int PADDING_SIZE = 0;
 
 void strong *memAlloc(size_t size) {
 	void *raw = malloc(METADATA_SIZE + size + PADDING_SIZE);
-	//memset(raw, 0, METADATA_SIZE);
+	memset(raw, 0, METADATA_SIZE);
 	return raw + METADATA_SIZE;
 }
 
@@ -25,7 +25,7 @@ void strong *memRealloc(void strong *mem, size_t size) {
 	for (unsigned int i = 0; i < METADATA_SIZE; i++) {
 		int b = (int) *((char *) raw + i);
 		if (b != 0) {
-			logMsg(LOG_INFO, 0, "%u, %u", i, b);
+			logMsg(LOG_INFO, 0, "memAlloc metadata corruption detected in memRealloc %u, %u", i, b);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -44,7 +44,7 @@ void memFree(void const strong *mem) {
 			exit(EXIT_FAILURE);
 		}
 	}
-//	free(raw);
+	free(raw);
 }
 
 

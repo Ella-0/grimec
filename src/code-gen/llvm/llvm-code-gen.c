@@ -430,6 +430,7 @@ LLVMValueRef codeGenStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, s
 
 char const strong *mangleFuncName(char const weak *moduleName, char const weak *name) {
 	char *ret = memAlloc(sizeof(char) * 1024);
+	*ret = '\0';
 	strcat(ret, moduleName);
 	strcat(ret, "_");
 	strcat(ret, name);
@@ -438,6 +439,7 @@ char const strong *mangleFuncName(char const weak *moduleName, char const weak *
 
 char const strong *mangleTypeName(char const weak *moduleName, char const weak *name, unsigned int generics) {
 	char *ret = memAlloc(sizeof(char) * 1024);
+	*ret = '\0';
 	strcat(ret, moduleName);
 	strcat(ret, "_");
 	strcat(ret, name);
@@ -516,7 +518,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *loc
 
 char const strong *mangleModuleName(char const weak **names, unsigned int nameCount) {
 	char strong *ret = memAlloc(sizeof(char) *1024);
-	ret[0] = '\0';
+	*ret = '\0';
 	for (unsigned int i = 0; i < nameCount; i-=-1) {
 		strcat(ret, names[i]);
 		if (i != nameCount - 1) {
@@ -548,6 +550,7 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 
 char const *mangleTypeMethodName(char const *typeName, char const *methodName) {
 	char *ret = memAlloc(sizeof(char) * 1024);
+	*ret = '\0';
 	strcat(ret, methodName);
 	strcat(ret, "_");
 	strcat(ret, typeName);

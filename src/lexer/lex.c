@@ -279,7 +279,7 @@ static struct Token strong *genIf(char const strong *value) {
 }
 
 static struct Token strong *genBool(char const strong *value) {
-	struct BoolToken strong *token = memAlloc(sizeof(struct IfToken));
+	struct BoolToken strong *token = memAlloc(sizeof(struct BoolToken));
 	token->base.type = BOOL_TOKEN;
 	token->base.raw = value;
 	if (!strcmp(value, "true")) {

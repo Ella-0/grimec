@@ -456,11 +456,11 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
-	(*tokens)++;
 	struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
 	var->name = ((struct IdToken *)(**tokens))->value;
-	var->name = "ret";
+	//var->name = heapString("ret");
 	out->var = var;
+	(*tokens)++;
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 
 	logMsg(LOG_INFO, 1, "Attempting '=' token consumption");
