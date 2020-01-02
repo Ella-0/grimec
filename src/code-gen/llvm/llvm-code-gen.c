@@ -19,10 +19,10 @@ struct TypeLLVM {
 
 struct TreeList {
 	unsigned int treeCount;
-	struct Tree **trees;
+	struct Tree strong *strong *trees;
 };
 
-void treeListCreate(struct TreeList *ret) {
+void treeListCreate(struct TreeList weak *ret) {
 	ret->treeCount = 0;
 	ret->trees = NULL;
 }
@@ -35,14 +35,18 @@ void treeListPush(struct TreeList *this, struct Tree *tree) {
 }
 
 // kills the tree
-void treeListPop(struct TreeList *this) {
+void treeListPop(struct TreeList weak *this) {
 	this->treeCount--;
 	treeDel(this->trees[this->treeCount]);
 	this->trees = memRealloc(this->trees, this->treeCount * sizeof(struct Tree **));
 }
 
+struct Tree weak *treeListPeak(struct TreeList const weak *self) {
+	return self->trees[self->treeCount - 1];	
+}
+
 // does not free list
-void treeListDel(struct TreeList *this) {
+void treeListDel(struct TreeList strong *this) {
 	for (int i = 0; i < (int) this->treeCount; i++) {
 		treeDel((this->trees[i]));
 	}
@@ -210,33 +214,37 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMBuilderRef builder, struct Tree **localT
 	}
 }
 
-LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr);
+LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr);
 
-LLVMValueRef codeGenBinaryExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct BinaryExpr *expr) {
+LLVMValueRef codeGenBinaryExprLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct BinaryExpr *expr) {
+	LLVMValueRef ret;
 	switch (expr->op) {
 		case ADD_OP:
-			LLVMBuildAdd(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
+			ret = LLVMBuildAdd(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
 			break;
 		case SUB_OP:
-			LLVMBuildSub(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
+			ret = LLVMBuildSub(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
 			break;
 		case MUL_OP:
-			LLVMBuildMul(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
+			ret = LLVMBuildMul(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
 			break;
 		case DIV_OP:
-			LLVMBuildSDiv(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
+			ret = LLVMBuildSDiv(builder, codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->rhs), "");
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Unimplemented Op");
-			exit(-1);
+			exit(EXIT_FAILURE);
 	}
+	return ret;
 }
 
-LLVMValueRef codeGenVarExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct VarExpr *expr) {
+LLVMValueRef codeGenVarExprLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct VarExpr *expr) {
 	LLVMValueRef ret = NULL;
-	for (int i = localVarSymbols.treeCount; ret == NULL && i > 0; i--) {
-		ret = treeLookUp(localVarSymbols.trees[i - 1], expr->name);
+	for (int i = localVarSymbols->treeCount; ret == NULL && i > 0; i--) {
+logMsg(LOG_WARNING, 4, "== %d %d", localVarSymbols->treeCount, i);
+		ret = treeLookUp(localVarSymbols->trees[i - 1], expr->name);
 	}
+logMsg(LOG_WARNING, 4, "== exited");
 	if (ret == NULL) {
 		logMsg(LOG_ERROR, 4, "Variable '%s' not defined in this scope!", expr->name);
 		exit(-1);
@@ -244,7 +252,7 @@ LLVMValueRef codeGenVarExprLLVM(LLVMBuilderRef builder, struct TreeList localVar
 	return ret;
 }
 
-LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList, struct Tree **funcs, struct Tree **types, struct CallExpr *expr) {	
+LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList *varList, struct Tree **funcs, struct Tree **types, struct CallExpr *expr) {	
 	LLVMValueRef ret = treeLookUp(*funcs, expr->name);
 	if (ret == NULL) {
 		logMsg(LOG_ERROR, 1, "Function '%s' not defined in this scope!", expr->name);
@@ -270,7 +278,7 @@ LLVMValueRef codeGenCallExprLLVM(LLVMBuilderRef builder, struct TreeList varList
 	return ret;
 }
 
-LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct MethodCallExpr *expr) {
+LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct MethodCallExpr *expr) {
 	logMsg(LOG_INFO, 2, "Building Method Call");
 	LLVMValueRef ret;
 	LLVMValueRef lhs = codeGenExprLLVM(builder, localVarSymbols, funcs, types, expr->lhs);
@@ -298,7 +306,7 @@ LLVMValueRef codeGenMethodCallLLVM(LLVMBuilderRef builder, struct TreeList local
 	return ret;
 }
 
-LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr) {
+LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr) {
 	LLVMValueRef ret;
 	switch (expr->type) {
 		case LITERAL_EXPR:
@@ -327,20 +335,21 @@ LLVMValueRef codeGenExprLLVM(LLVMBuilderRef builder, struct TreeList localVarSym
 	return ret;
 }
 
-LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct ExprStmt *stmt) {
+LLVMValueRef codeGenExprStmtLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct ExprStmt *stmt) {
 	return codeGenExprLLVM(builder, localVarSymbols, funcs, types, stmt->expr);
 }
 
-LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct VarStmt *stmt) {
+LLVMValueRef codeGenVarStmtLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct VarStmt *stmt) {
 	logMsg(LOG_INFO, 1, "Creating Var with name %s", stmt->var->name);
 	LLVMValueRef rhs = codeGenExprLLVM(builder, localVarSymbols, funcs, types, stmt->init);
-	localVarSymbols.trees[localVarSymbols.treeCount - 1] = treeAdd(localVarSymbols.trees[localVarSymbols.treeCount - 1], stmt->var->name, rhs);
+logMsg(LOG_WARNING, 4, "== %s", stmt->var->name);
+	localVarSymbols->trees[localVarSymbols->treeCount - 1] = treeAdd(treeListPeak(localVarSymbols), stmt->var->name, rhs);
 	return rhs; 
 }
 
-LLVMValueRef codeGenAssignStmtLLVM(LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct AssignStmt *stmt) {
+LLVMValueRef codeGenAssignStmtLLVM(LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct AssignStmt *stmt) {
 	LLVMValueRef rhs = codeGenExprLLVM(builder, localVarSymbols, funcs, types, stmt->init);
-	localVarSymbols.trees[localVarSymbols.treeCount - 1] = treeAdd(localVarSymbols.trees[localVarSymbols.treeCount - 1], stmt->var->name, rhs);
+	localVarSymbols->trees[localVarSymbols->treeCount - 1] = treeAdd(localVarSymbols->trees[localVarSymbols->treeCount - 1], stmt->var->name, rhs);
 	return rhs;
 }
 
@@ -348,25 +357,25 @@ LLVMValueRef codeGenNullStmtLLVM(LLVMBuilderRef builder, struct NullStmt *stmt) 
 	return LLVMBuildRet(builder, LLVMBuildAdd(builder, LLVMConstInt(LLVMIntType(32), 0, false), LLVMConstInt(LLVMIntType(32), 0, false), "no-op"));
 }
 
-LLVMValueRef codeGenStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct Stmt *stmt);
+LLVMValueRef codeGenStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Stmt *stmt);
 
-LLVMValueRef codeGenBlockStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList list, struct Tree **funcs, struct Tree **types, struct BlockStmt *stmt) {
+LLVMValueRef codeGenBlockStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *list, struct Tree **funcs, struct Tree **types, struct BlockStmt *stmt) {
 	struct Tree *newTree = treeCreate();
 
-	treeListPush(&list, newTree);
+	treeListPush(list, newTree);
 
-	list.trees[list.treeCount - 1] = treeAdd(list.trees[list.treeCount - 1], "ret", NULL);
+	list->trees[list->treeCount - 1] = treeAdd(list->trees[list->treeCount - 1], "ret", NULL);
 
 	for (int i = 0; i < (int) stmt->stmtCount; i++) {
 		logMsg(LOG_INFO, 1, "Building sub stmt #%d", i);
 		codeGenStmtLLVM(functionRef, builder, list, funcs, types, stmt->stmts[i]);
 	}
-	LLVMValueRef ret = treeLookUp(list.trees[list.treeCount - 1], "ret");
-	treeListPop(&list);
+	LLVMValueRef ret = treeLookUp(list->trees[list->treeCount - 1], "ret");
+	treeListPop(list);
 	return ret;
 }
 
-LLVMValueRef codeGenIfStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree strong *weak *funcs, struct Tree strong *weak *types, struct IfStmt weak *stmt) {
+LLVMValueRef codeGenIfStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree strong *weak *funcs, struct Tree strong *weak *types, struct IfStmt weak *stmt) {
 	LLVMBasicBlockRef ifThen = LLVMAppendBasicBlock(functionRef, "ifThen");
 	LLVMBasicBlockRef ifElse = LLVMAppendBasicBlock(functionRef, "ifElse");
 	LLVMBasicBlockRef ifExit = LLVMAppendBasicBlock(functionRef, "ifExit");
@@ -400,7 +409,7 @@ LLVMValueRef codeGenIfStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder,
 	return NULL;
 }
 
-LLVMValueRef codeGenStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList localVarSymbols, struct Tree **funcs, struct Tree **types, struct Stmt *stmt) {
+LLVMValueRef codeGenStmtLLVM(LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Stmt *stmt) {
 	logMsg(LOG_INFO, 2, "Started Stmt Code Gen");
 	switch (stmt->type) {
 		case NULL_STMT:
@@ -498,7 +507,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *loc
 
 	//list.trees[0] = treeAdd(list.trees[0], "ret", NULL);
 
-	LLVMValueRef retValue = codeGenStmtLLVM(out, builder, list, localFuncs, localTypes, func->body);
+	LLVMValueRef retValue = codeGenStmtLLVM(out, builder, &list, localFuncs, localTypes, func->body);
 
 	//LLVMValueRef retValue = treeLookUp(list.trees[0], "ret");
 	if (retValue == NULL) {
@@ -512,6 +521,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *loc
 	}
 	logMsg(LOG_INFO, 2, "Finished Func Code Gen");
 
+	LLVMDisposeBuilder(builder);
 	treeListDel(&list);
 	return out;
 }
@@ -577,13 +587,13 @@ LLVMTypeRef codeGenClassDef(LLVMModuleRef module, struct Tree **localTypes, stru
 
 	logMsg(LOG_INFO, 1, "Creating ClassDef with name %s", name);
 
-	char *pimplName = memAlloc(sizeof(char) * (8 + strlen(name)));
-	pimplName[0] = '\0';
+//	char *pimplName = memAlloc(sizeof(char) * (8 + strlen(name)));
+//	pimplName[0] = '\0';
 
-	strcat(pimplName, "_pimpl_");
-	strcat(pimplName, name);
+//	strcat(pimplName, "_pimpl_");
+//	strcat(pimplName, name);
 
-	//LLVMTypeRef pimpl = LLVMStructCreateNamed(LLVMGetGlobalContext(), pimplName);
+//	LLVMTypeRef pimpl = LLVMStructCreateNamed(LLVMGetGlobalContext(), pimplName);
 	out = LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
 	LLVMTypeRef pointer = LLVMPointerType(out, 0);
 	LLVMDumpType(out);
@@ -680,6 +690,7 @@ void codeGenLLVM(struct Module weak *module) {
 		codeGenFuncLLVM(moduleRef, &localFuncs, &localTypes, name, module->funcs[i]);
 	}
 	printf("%s\n", LLVMPrintModuleToString(moduleRef));
+	LLVMDisposeModule(moduleRef);
 	treeDel(localFuncs);
 	treeDel(localTypes);
 	logMsg(LOG_INFO, 2, "Finished Codegen");

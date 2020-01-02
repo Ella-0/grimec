@@ -33,7 +33,7 @@ void logTokens(struct Token const *const *tokens) {
 
 int main(int argc, char const **argv) {
 
-	setLogLevel(0);
+	setLogLevel(1);
 	while (argc > 1) {
 		char const *fileName = argv[argc - 1];
 		argc--;
@@ -44,7 +44,7 @@ int main(int argc, char const **argv) {
 		
 		logTokens(tokens);
 		struct Module tree = parse(tokens);
-		//codeGenLLVM(&tree);
+		codeGenLLVM(&tree);
 		
 		delModule(tree);
 
