@@ -53,7 +53,9 @@ enum TokenType {
 
 struct Token {
 	enum TokenType type;
-	char const strong *raw;
+    unsigned int line;
+    unsigned int column;
+    char const strong *raw;
 };
 
 void delTokens(struct Token const strong *const strong *tokens);

@@ -8,7 +8,10 @@ struct Var {
 
 enum TypeType {
 	BUILDIN_TYPE,
-	SIMPLE_TYPE,
+    ARRAY_TYPE,
+    BOX_TYPE,
+    TUPLE_TYPE,
+    SIMPLE_TYPE,
 	GENERIC_TYPE,
 };
 
@@ -30,6 +33,19 @@ struct BuildinType {
 struct SimpleType {
 	struct Type base;
 	char const weak *name;
+};
+
+struct ArrayType {
+    struct Type base;
+    struct Type strong *type;
+    bool sized;
+    unsigned int elementCount;
+};
+
+struct TupleType {
+    struct Type base;
+    unsigned int varCount;
+    struct Var **vars;
 };
 
 struct GenericType {

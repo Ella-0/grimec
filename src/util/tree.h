@@ -3,7 +3,7 @@
 //TODO Generic
 
 struct Tree {
-	char const weak *key;
+	char const strong *key;
 	void weak *value;
 	struct Tree strong *left;
 	struct Tree strong *right;

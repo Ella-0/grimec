@@ -1,4 +1,11 @@
 #include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "util/log.h"
 #include "util/mem.h"
@@ -8,7 +15,7 @@
 #include "parser/parser.h"
 #include "file/file.h"
 
-const char * testFile =
+const char *testFile =
 "mod test::test::test\n"
 "use std::io\n"
 "func main() -> Int {\n"
@@ -44,7 +51,7 @@ int main(int argc, char const **argv) {
 		
 		logTokens(tokens);
 		struct Module tree = parse(tokens);
-		codeGenLLVM(&tree);
+//		codeGenLLVM(&tree);
 		
 		delModule(tree);
 

@@ -7,7 +7,7 @@ struct Tree *treeCreate() {
 	return NULL;
 }
 
-struct Tree strong *treeAdd(struct Tree strong *tree, char const weak *key, void weak *value) {
+struct Tree strong *treeAdd(struct Tree strong *tree, char const strong *key, void weak *value) {
 	if (tree == NULL) {
 		struct Tree strong *out = memAlloc(sizeof(struct Tree));
 		out->key = key;
@@ -21,6 +21,7 @@ struct Tree strong *treeAdd(struct Tree strong *tree, char const weak *key, void
 			tree->right = treeAdd(tree->right, key, value);
 			return tree;
 		} else if (cmp == 0) {
+			memFree(key);
 			tree->value = value;
 			return tree;
 		} else if (cmp < 0) {
@@ -35,6 +36,7 @@ void treeDel(struct Tree strong *tree) {
 	if (tree != NULL) {
 		treeDel(tree->left);
 		treeDel(tree->right);
+		memFree(tree->key);
 		memFree(tree);
 	}
 }

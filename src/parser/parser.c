@@ -1,14 +1,25 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include "../lexer/token.h"
 #include "../util/log.h"
 #include "../util/mem.h"
 #include "parser.h"
 
+struct Token const weak *consumeToken(struct Token const *const **tokens, enum TokenType type, char const *string) {
+    logMsg(LOG_INFO, 1, "Attempting %s Token Consumption", string);
+    if ((**tokens)->type != type) {
+        logMsg(LOG_ERROR, 4, "Syntax Error: Unexpected Token at %d:%d: Expected %s but got '%s'", (**tokens)->line, (**tokens)->column, string, (**tokens)->raw);
+        exit(EXIT_FAILURE);
+    }
+    (*tokens)++;
+    return *((*tokens)-1);
+}
+
 // In the future there will be no buildin types Only types with or without generics. 
 // But for bootstrapping String, Int and Bool will be buildin and will be the only types. 
 // They will be removed as soon as the compiler is bootstrapped and replaced with classes.
-struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
+/*struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Buildin Type");
 	struct BuildinType *ret = (struct BuildinType *) memAlloc(sizeof(struct BuildinType));
 
@@ -27,23 +38,105 @@ struct BuildinType *parseBuildinType(struct Token const *const **tokens) {
 
 	logMsg(LOG_INFO, 2, "Parsed Buildin Type");
 	return ret;
+}*/
+
+struct Type *parseType(struct Token const *const **tokens);
+
+struct Type strong *parseTubpleType(struct Token const *const **tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Tuple Type");
+
+    consumeToken(tokens, L_PAREN_TOKEN, "'('");
+
+    for (unsigned int count = 0; (**tokens)->type != R_PAREN_TOKEN; count++) {
+        if (count != 0) {
+            consumeToken(tokens, COMMA_TOKEN, "','");
+        }
+
+        consumeToken(tokens, ID_TOKEN, "Identifier");
+
+        switch ((**tokens)->type) {
+            case COLON_TOKEN: {
+                    consumeToken(tokens, COLON_TOKEN, "':'");
+                    consumeToken(tokens, ID_TOKEN, "Identifier");
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    consumeToken(tokens, R_PAREN_TOKEN, "')'");
+
+    logMsg(LOG_INFO, 2, "Parsed Tuple Type");
+}
+
+struct Type strong *parseArrayType(struct Token const *const **tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Array Type");
+
+    struct ArrayType strong *ret = (struct ArrayType strong *) memAlloc(sizeof(struct ArrayType));
+    ret->base.type = ARRAY_TYPE;
+    
+    consumeToken(tokens, L_BRACKET_TOKEN, "'['");
+    
+    ret->type = parseType(tokens);
+
+    switch ((**tokens)->type) {
+        case R_BRACKET_TOKEN: {
+                ret->sized = false;
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'");
+                ret->elementCount = 0;
+            }
+            break;
+        case SEMI_COLON_TOKEN: {
+                ret->sized = true;
+                consumeToken(tokens, SEMI_COLON_TOKEN, "';'");
+                struct IntToken const weak *sizeToken = (struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer");
+                ret->elementCount = sizeToken->value;
+            }
+            break;
+        default:
+            logMsg(LOG_ERROR, 4, "Unexepected Token at %d:%d: Exected ']' or ';' but got '%s'", (**tokens)->line, (**tokens)->column, (**tokens)->raw);
+            exit(EXIT_FAILURE);
+    }
+
+    return (struct Type strong *) ret;
+}
+
+struct Type strong *parseSimpleType(struct Token const strong *const strong **weak tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Simple Type");
+    
+    struct SimpleType strong *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
+    ret->base.type = SIMPLE_TYPE;
+
+    struct Token const weak *c = consumeToken(tokens, ID_TOKEN, "Identifier");
+    ret->name = c->raw;
+
+    logMsg(LOG_INFO, 2, "Parsed Simple Type");
+    return (struct Type strong *) ret;
 }
 
 struct Type *parseType(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Type");
 
-	struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
-	ret->base.type = SIMPLE_TYPE;
+    struct Type strong *ret = NULL;
 
-	logMsg(LOG_INFO, 1, "Attempting Id Token Consumption");
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected Identifier but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	ret->name = (**tokens)->raw;
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "Id token consumption succesful");
+    switch ((**tokens)->type) {
+        case ID_TOKEN: {
+                ret = (struct Type strong *) parseSimpleType(tokens);
+            }
+            break;
 
+        case L_BRACKET_TOKEN: {
+                ret = (struct Type strong *) parseArrayType(tokens);
+            }
+            break;
+        
+        default:
+            logMsg(LOG_ERROR, 4, "Syntax Error: Unexpected Token at %d:%d: Expected Identifier or '[' but got '%s'", (**tokens)->line, (**tokens)->column, (**tokens)->raw);
+            exit(EXIT_FAILURE);
+    }
+
+	//struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
 	logMsg(LOG_INFO, 2, "Parsed Type");
 	return (struct Type *) ret;
 }
@@ -52,26 +145,14 @@ struct Var *parseVar(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Var");
 	struct Var *ret = (struct Var *) memAlloc(sizeof(struct Var));
 
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier");
-		logMsg(LOG_INFO, 4, (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++; // consume identifier
+	consumeToken(tokens, ID_TOKEN, "Identifier");
+	
+    consumeToken(tokens, COLON_TOKEN, "':'");
 
-	if ((**tokens)->type != COLON_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected ':'");
-		exit(-1);
-	}
-	(*tokens)++;
+	parseType(tokens);
 
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier");
-		logMsg(LOG_INFO, 4, (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	return ret;
+	logMsg(LOG_INFO, 2, "Parsed Var");
+    return ret;
 }
 
 struct Expr *parseExpr(struct Token const *const **tokens);
@@ -92,127 +173,89 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct IntLiteral *lit =(struct IntLiteral *)  memAlloc(sizeof(struct IntLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = INT_LITERAL;
-				lit->val = ((struct IntToken *) (**tokens))->value;
+				lit->val = ((struct IntToken *) consumeToken(tokens, INT_TOKEN, "Integer"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created Int Literal with value: %d", lit->val);
-				(*tokens)++; 
 			}
 			break;
 		case BOOL_TOKEN: {
 				struct BoolLiteral strong *lit = (struct BoolLiteral strong *) memAlloc(sizeof(struct BoolLiteral)); 
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = BOOL_LITERAL;
-				lit->val = ((struct BoolToken *) (**tokens))->value;
+				lit->val = ((struct BoolToken *) consumeToken(tokens, BOOL_TOKEN, "Boolean"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created Bool Literal with value: %d", lit->val);
-				(*tokens)++;
 			}
 			break;
 		case STRING_TOKEN: {
 				struct StringLiteral *lit = (struct StringLiteral *) memAlloc(sizeof(struct StringLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = STRING_LITERAL;
-				lit->val = ((struct StringToken *) (**tokens))->value;
+				lit->val = ((struct StringToken *) consumeToken(tokens, STRING_TOKEN, "String"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created String Literal with value: %s", lit->val);
-				(*tokens)++;
 			}
 			break;
 		case CHAR_TOKEN: {
 				struct CharLiteral *lit = (struct CharLiteral *) memAlloc(sizeof(struct CharLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = CHAR_LITERAL;
-				lit->val = ((struct CharToken *) (**tokens))->value;
+				lit->val = ((struct CharToken *) consumeToken(tokens, CHAR_TOKEN, "Char"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Cheated Char Literal with value: %c", lit->val);
-				(*tokens)++;
 			}
 			break;
 		case BYTE_TOKEN: {
 				struct ByteLiteral strong *lit = (struct ByteLiteral strong *) memAlloc(sizeof(struct ByteLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = BYTE_LITERAL;
-				lit->val = ((struct ByteToken weak *) (**tokens))->value;
+				lit->val = ((struct ByteToken weak *) consumeToken(tokens, BYTE_TOKEN, "Byte"))->value;
 				ret = (struct Expr strong *) lit;
 				logMsg(LOG_INFO, 1, "Created Byte Literal with value: %d", lit->val);
-				(*tokens)++;
 			}
 			break;
 		case L_PAREN_TOKEN: {
-				logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
-		    		if ((**tokens)->type != L_PAREN_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+				consumeToken(tokens, L_PAREN_TOKEN, "'('");
 				ret = parseExpr(tokens);
-				logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
-		    		if ((**tokens)-> type != R_PAREN_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "')' Token Consumption Successful");
+				consumeToken(tokens, R_PAREN_TOKEN, "')'");
 			}
 			break;
-		case ID_TOKEN:
-			logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-			if ((**tokens)->type != ID_TOKEN) {
-				logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-				exit(-1);
-			}
-			char const *name = (**tokens)->raw;
-			(*tokens)++;
-			logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
-			
-			switch ((**tokens)->type) { 
-				case L_PAREN_TOKEN: {
-						struct CallExpr *callExpr = (struct CallExpr *) memAlloc(sizeof(struct CallExpr));
-						callExpr->base.type = CALL_EXPR;
-						callExpr->name = name;
-						callExpr->argCount = 0;
-						callExpr->args = NULL;
-						logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
-						if ((**tokens)->type != L_PAREN_TOKEN) {
-							logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-							exit(-1);
-						}
-						(*tokens)++;
-						logMsg(LOG_INFO, 1, "'(' token consumption successful");
-		
-						while ((**tokens)->type != R_PAREN_TOKEN) {
-							if (callExpr->argCount != 0) {
-								logMsg(LOG_INFO, 1, "Attempting ',' token consumption");
-								if ((**tokens)->type != COMMA_TOKEN) {
-									logMsg(LOG_ERROR, 4, "Invalid Token: Expected ',' but got '%s'", (**tokens)->raw);
-									exit(-1);
-								}
-								(*tokens)++;
-								logMsg(LOG_INFO, 1, "',' token consumption succesful");
-							}
-							pushExpr(&callExpr->args, &callExpr->argCount, parseExpr(tokens));
-						}
-	
-						logMsg(LOG_INFO, 1, "Attempting ')' token conumption");
-						if ((**tokens)->type != R_PAREN_TOKEN) {
-							logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-							exit(-1);
-						}
-						(*tokens)++;
-						logMsg(LOG_INFO, 1, "')' token consumption successful");
-						ret = (struct Expr *) callExpr;	
-					}
-					break;
+		case ID_TOKEN: {
+    			struct Token const weak *nameToken = consumeToken(tokens, ID_TOKEN, "Identifier");
+    			char const *name = nameToken->raw;
+    			
+    			switch ((**tokens)->type) { 
+    				case L_PAREN_TOKEN: {
+    						struct CallExpr *callExpr = (struct CallExpr *) memAlloc(sizeof(struct CallExpr));
+    						callExpr->base.type = CALL_EXPR;
+    						callExpr->name = name;
+    						callExpr->argCount = 0;
+    						callExpr->args = NULL;
+    						
+                            consumeToken(tokens, L_PAREN_TOKEN, "'('");
 
-				default: {
-						struct VarExpr *varExpr = (struct VarExpr *) memAlloc(sizeof(struct VarExpr));
-						varExpr->base.type = VAR_EXPR;
-						varExpr->name = name;
-						ret = (struct Expr *) varExpr;
-					}
-					break;
-			}
+    						while ((**tokens)->type != R_PAREN_TOKEN) {
+    							if (callExpr->argCount != 0) {
+    								consumeToken(tokens, COMMA_TOKEN, ",");
+    							}
+    							pushExpr(&callExpr->args, &callExpr->argCount, parseExpr(tokens));
+    						}
+    	                    
+                            consumeToken(tokens, R_PAREN_TOKEN, ")");
+
+    						ret = (struct Expr *) callExpr;	
+    					}
+    					break;
+    
+    				default: {
+    						struct VarExpr *varExpr = (struct VarExpr *) memAlloc(sizeof(struct VarExpr));
+    						varExpr->base.type = VAR_EXPR;
+    						varExpr->name = name;
+    						ret = (struct Expr *) varExpr;
+    					}
+    					break;
+    			}
+            }
 			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Factor");

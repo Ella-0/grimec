@@ -303,8 +303,9 @@ static struct Pattern PATTERNS[] = {
 	{R_BRACKET_TOKEN, "", "^\\]$", &genRBracket},
 	{L_BRACE_TOKEN, "", "^\\{$", &genLBrace},
 	{R_BRACE_TOKEN, "", "^\\}$", &genRBrace},
-	{COLON_TOKEN, "", "^:$", &genColon},
+	{EQUALS_TOKEN, "", "^:=$", &genEquals},
 	{DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},
+	{COLON_TOKEN, "", "^:$", &genColon},
 	{ARROW_TOKEN, "", "^->$", &genArrow},
 	{FUNC_TOKEN, "", "^func$", &genFunc},
 	{BUILD_TOKEN, "", "^build$", &genBuild},
@@ -313,7 +314,6 @@ static struct Pattern PATTERNS[] = {
 	{IF_TOKEN, "", "^if$", &genIf},
 	{BOOL_TOKEN, "", "^true$", &genBool},
 	{BOOL_TOKEN, "", "^false$", &genBool},
-	{EQUALS_TOKEN, "", "^=$", &genEquals},
 	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},
 	{MOD_TOKEN, "", "^mod$", &genMod},
 	{USE_TOKEN, "", "^use$", &genUse},
@@ -329,6 +329,7 @@ static struct Pattern PATTERNS[] = {
 	{CHAR_TOKEN, "", "^'.'$", &genChar},
 	{DOT_TOKEN, "", "^\\.$", &genDot},
 	{BYTE_TOKEN, "", "^[0-9_]+B$", &genByte},
+	{100, "", "^type$", &null},
 	//{1000, "", "^//.*\n", &genWhitespace},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
@@ -352,24 +353,32 @@ bool match(const char weak *string, const char weak *pattern) {
 	return true;
 }
 
-char strong *pushChar(char strong *weak *buffer, int weak *bufferCount, char c) {
+char strong *pushChar(char strong *weak *buffer, int weak *bufferCount, char c, unsigned int weak *line, unsigned int weak *column) {
 	(*buffer) = (char strong *) memRealloc(*buffer, (*bufferCount + 2) * sizeof(char)); // NULL terminator
+    if (c == '\n') {
+        (*line)++;
+        *column = 0;
+    } else {
+        (*column)++;
+    }
 	(*buffer)[*bufferCount] = c;
 	(*bufferCount)++;
 	(*buffer)[*bufferCount] = '\0';
 	return *buffer;
 }
 
-struct Token const **pushToken(struct Token const strong *strong *weak *buffer, int *bufferCount, struct Token strong *token) {
+struct Token const **pushToken(struct Token const strong *strong *weak *buffer, int *bufferCount, struct Token strong *token, unsigned int line, unsigned int column) {
 	if (token == NULL) {
 		logMsg(LOG_INFO, 1, "Not Pushing WhiteSpace");
 	} else {
 		logMsg(LOG_INFO, 1, "Pushing Token %s %u", token->raw, *bufferCount);
-		struct Token const strong *strong *old = *buffer;
+		//struct Token const strong *strong *old = *buffer;
 		//memFree(old);
 		//(*buffer) = memAlloc((*bufferCount + 1) * sizeof(struct Token *));
 		//memcpy(*buffer, old, *bufferCount * sizeof(struct Token *));
 		(*buffer) = memRealloc(*buffer, (*bufferCount + 1) * sizeof(struct Token *));
+        token->line = line;
+        token->column = column;
 		(*buffer)[*bufferCount] = token;
 		(*bufferCount)++;
 		logMsg(LOG_INFO, 1, "Pushed Token %u", (*bufferCount));
@@ -391,11 +400,15 @@ struct Pattern matchingPattern(const char weak *buffer) {
 struct Token const strong *const strong *lex(const char weak *input) {
 	struct Token const strong *strong *out = NULL;
 	int tokenCount = 0;
-	//char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
+    unsigned int line = 0;
+    unsigned int column = 0;
+    //char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 	//int bufferCount = 0;
 	//buffer[bufferCount] = '\0';
 	
 	while (*input != '\0') {
+        unsigned int startLine = line;
+        unsigned int startColumn = column;
 		char strong *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 		int bufferCount = 0;
 		buffer[bufferCount] = '\0';
@@ -411,7 +424,7 @@ struct Token const strong *const strong *lex(const char weak *input) {
 				exit(-1);
 			}
 			
-			pushChar(&buffer, &bufferCount, *input);
+			pushChar(&buffer, &bufferCount, *input, &line, &column);
 			input++;
 
 			pattern = matchingPattern(buffer);
@@ -420,7 +433,7 @@ struct Token const strong *const strong *lex(const char weak *input) {
 		
 		while (matched) {
 			bool eof = *input == '\0';
-			pushChar(&buffer, &bufferCount, *input);
+			pushChar(&buffer, &bufferCount, *input, &line, &column);
 			input++;
 
 			struct Pattern testingPattern;
@@ -441,14 +454,14 @@ struct Token const strong *const strong *lex(const char weak *input) {
 		logMsg(LOG_INFO, 2, "%d\n", bufferCount);
 		logMsg(LOG_INFO, 2, buffer);
 		logMsg(LOG_INFO, 2, pattern.pattern);
-		pushToken(&out, &tokenCount, pattern.gen(buffer));
+		pushToken(&out, &tokenCount, pattern.gen(buffer), startLine, startColumn);
 	}
 
 	
 	struct Token strong *eofToken = memAlloc(sizeof(struct Token));
 	eofToken->type = EOF_TOKEN;
 	eofToken->raw = heapString("");
-	pushToken(&out, &tokenCount, eofToken);
+	pushToken(&out, &tokenCount, eofToken, line, column);
 
 	logMsg(LOG_INFO, 1, "End of lex");
 
