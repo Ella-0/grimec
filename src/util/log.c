@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "colours.h"
 #include "log.h"
-#define NORMAL "\x1b[0m"
-#define INFO_COLOUR "\x1b[34m"
-#define WARNING_COLOUR "\x1b[35m" 
-#define ERROR_COLOUR "\x1b[31m"
+#define NORMAL DEFAULT
+#define INFO_COLOUR BLUE
+#define WARNING_COLOUR MAGENTA 
+#define ERROR_COLOUR RED
 
 static int logLevel = 4;
 

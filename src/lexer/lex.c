@@ -293,6 +293,20 @@ static struct Token strong *genBool(char const strong *value) {
 	return (struct Token strong *) token;
 }
 
+static struct Token strong *genTypeToken(char const strong *value) {
+    struct TypeToken strong *token = memAlloc(sizeof(struct TypeToken));
+    token->base.type = TYPE_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genExtToken(char const strong *value) {
+    struct ExtToken strong *token = memAlloc(sizeof(struct ExtToken));
+    token->base.type = EXT_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -329,8 +343,9 @@ static struct Pattern PATTERNS[] = {
 	{CHAR_TOKEN, "", "^'.'$", &genChar},
 	{DOT_TOKEN, "", "^\\.$", &genDot},
 	{BYTE_TOKEN, "", "^[0-9_]+B$", &genByte},
-	{100, "", "^type$", &null},
-	//{1000, "", "^//.*\n", &genWhitespace},
+	{TYPE_TOKEN, "", "^type$", &genTypeToken},
+    {EXT_TOKEN, "", "^ext$", &genExtToken},
+    //{1000, "", "^//.*\n", &genWhitespace},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
 };
 
@@ -357,7 +372,7 @@ char strong *pushChar(char strong *weak *buffer, int weak *bufferCount, char c, 
 	(*buffer) = (char strong *) memRealloc(*buffer, (*bufferCount + 2) * sizeof(char)); // NULL terminator
     if (c == '\n') {
         (*line)++;
-        *column = 0;
+        *column = 1;
     } else {
         (*column)++;
     }
@@ -400,8 +415,8 @@ struct Pattern matchingPattern(const char weak *buffer) {
 struct Token const strong *const strong *lex(const char weak *input) {
 	struct Token const strong *strong *out = NULL;
 	int tokenCount = 0;
-    unsigned int line = 0;
-    unsigned int column = 0;
+    unsigned int line = 1;
+    unsigned int column = 1;
     //char *buffer = memAlloc(1 * sizeof(char)); // NULL terminated
 	//int bufferCount = 0;
 	//buffer[bufferCount] = '\0';

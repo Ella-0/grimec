@@ -42,8 +42,10 @@ enum TokenType {
 	MOD_TOKEN,
 	CLASS_TOKEN,
 	PAD_TOKEN,
+    TYPE_TOKEN,
+    EXT_TOKEN,
 
-	DOT_TOKEN,
+    DOT_TOKEN,
 	BUILD_TOKEN,
 
 	DOUBLE_COLON_TOKEN,
@@ -204,4 +206,12 @@ struct DotToken {
 
 struct BuildToken {
 	struct Token base;
+};
+
+struct TypeToken {
+    struct Token base;
+};
+
+struct ExtToken {
+    struct Token base;
 };

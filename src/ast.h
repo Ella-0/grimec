@@ -37,6 +37,7 @@ struct SimpleType {
 
 struct ArrayType {
     struct Type base;
+    bool typed;
     struct Type strong *type;
     bool sized;
     unsigned int elementCount;
@@ -249,17 +250,25 @@ struct FuncDef {
 	struct Func strong *func;
 };
 
+struct TypeAlias {
+    char const weak *name;
+    struct Type strong *type;
+};
+
 struct Module {
 	unsigned int nameCount;
 	char const weak *strong *names; // name0::name1::name2
-	
+
 	unsigned int includeCount;
 	struct Use strong *strong *includes;
+
+    unsigned int typeAliasCount;
+    struct TypeAlias strong *strong *typeAliases;
 
 	unsigned int funcCount;
 	struct Func strong *strong *funcs;
 
-	unsigned int defCount;
+    unsigned int defCount;
 	struct Def strong *strong *defs;
 };
 

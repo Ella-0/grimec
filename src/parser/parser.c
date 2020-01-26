@@ -2,15 +2,26 @@
 #include <stdbool.h>
 #include <string.h>
 #include "../lexer/token.h"
+#include "../util/colours.h"
 #include "../util/log.h"
 #include "../util/mem.h"
 #include "parser.h"
 
-struct Token const weak *consumeToken(struct Token const *const **tokens, enum TokenType type, char const *string) {
+void syntaxError(char const weak *location, unsigned int line, unsigned int column, char const *expected, char const *actual) {
+    logMsg(LOG_ERROR, 4, RED "Syntax Error while parsing %s: "
+            MAGENTA "Unexpected Token at "
+            BLUE "%d:%d: "
+            DEFAULT "Expected "
+            YELLOW "%s "
+            DEFAULT "but got "
+            YELLOW "'%s'", location, line, column, expected, actual);
+    exit(EXIT_FAILURE);
+}
+
+struct Token const weak *consumeToken(struct Token const *const **tokens, enum TokenType type, char const *string, char const weak *location) {
     logMsg(LOG_INFO, 1, "Attempting %s Token Consumption", string);
     if ((**tokens)->type != type) {
-        logMsg(LOG_ERROR, 4, "Syntax Error: Unexpected Token at %d:%d: Expected %s but got '%s'", (**tokens)->line, (**tokens)->column, string, (**tokens)->raw);
-        exit(EXIT_FAILURE);
+        syntaxError(location, (**tokens)->line, (**tokens)->column, string, (**tokens)->raw);
     }
     (*tokens)++;
     return *((*tokens)-1);
@@ -40,34 +51,51 @@ struct Token const weak *consumeToken(struct Token const *const **tokens, enum T
 	return ret;
 }*/
 
+void pushVar(struct Var ***buffer, unsigned int *count, struct Var *var) {
+	(*count)++;
+	(*buffer) = memRealloc(*buffer, sizeof(struct Var *) * *count);
+	(*buffer)[(*count) - 1 ] = var;
+}
+
 struct Type *parseType(struct Token const *const **tokens);
 
-struct Type strong *parseTubpleType(struct Token const *const **tokens) {
+struct Type strong *parseTupleType(struct Token const *const **tokens) {
     logMsg(LOG_INFO, 2, "Parsing Tuple Type");
+    
+    struct TupleType strong *ret = memAlloc(sizeof(struct TupleType));
 
-    consumeToken(tokens, L_PAREN_TOKEN, "'('");
+    ret->base.type = TUPLE_TYPE;
+
+    consumeToken(tokens, L_PAREN_TOKEN, "'('", "Tuple Type");
+
+    ret->vars = NULL;
+    ret->varCount = 0;
 
     for (unsigned int count = 0; (**tokens)->type != R_PAREN_TOKEN; count++) {
         if (count != 0) {
-            consumeToken(tokens, COMMA_TOKEN, "','");
+            consumeToken(tokens, COMMA_TOKEN, "','", "Tuple Type");
         }
 
-        consumeToken(tokens, ID_TOKEN, "Identifier");
+        struct Var strong *var = memAlloc(sizeof(struct Var));
+        var->name = consumeToken(tokens, ID_TOKEN, "Identifier", "Tuple Type")->raw;
 
         switch ((**tokens)->type) {
             case COLON_TOKEN: {
-                    consumeToken(tokens, COLON_TOKEN, "':'");
-                    consumeToken(tokens, ID_TOKEN, "Identifier");
+                    consumeToken(tokens, COLON_TOKEN, "':'", "Tuple Type");
+                    var->type = parseType(tokens);
                 }
                 break;
             default:
                 break;
         }
+        pushVar(&ret->vars, &ret->varCount, var);
     }
 
-    consumeToken(tokens, R_PAREN_TOKEN, "')'");
+    consumeToken(tokens, R_PAREN_TOKEN, "')'", "Tuple Type");
 
     logMsg(LOG_INFO, 2, "Parsed Tuple Type");
+
+    return (struct Type strong *) ret;
 }
 
 struct Type strong *parseArrayType(struct Token const *const **tokens) {
@@ -76,27 +104,31 @@ struct Type strong *parseArrayType(struct Token const *const **tokens) {
     struct ArrayType strong *ret = (struct ArrayType strong *) memAlloc(sizeof(struct ArrayType));
     ret->base.type = ARRAY_TYPE;
     
-    consumeToken(tokens, L_BRACKET_TOKEN, "'['");
+    consumeToken(tokens, L_BRACKET_TOKEN, "'['", "Array Type");
     
-    ret->type = parseType(tokens);
-
     switch ((**tokens)->type) {
         case R_BRACKET_TOKEN: {
-                ret->sized = false;
-                consumeToken(tokens, R_BRACKET_TOKEN, "']'");
-                ret->elementCount = 0;
+                ret->typed = false;
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
             }
             break;
+        
         case SEMI_COLON_TOKEN: {
                 ret->sized = true;
-                consumeToken(tokens, SEMI_COLON_TOKEN, "';'");
-                struct IntToken const weak *sizeToken = (struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer");
-                ret->elementCount = sizeToken->value;
+                consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Array Type");
+                struct IntToken const weak *sizeToken = (struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer", "Array Type");
+                ret->elementCount = sizeToken->value;                  
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
             }
             break;
-        default:
-            logMsg(LOG_ERROR, 4, "Unexepected Token at %d:%d: Exected ']' or ';' but got '%s'", (**tokens)->line, (**tokens)->column, (**tokens)->raw);
-            exit(EXIT_FAILURE);
+
+        default: {
+                ret->typed = true;
+                ret->type = parseType(tokens);
+                ret->sized = false;
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
+            }
+            break;
     }
 
     return (struct Type strong *) ret;
@@ -108,7 +140,7 @@ struct Type strong *parseSimpleType(struct Token const strong *const strong **we
     struct SimpleType strong *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
     ret->base.type = SIMPLE_TYPE;
 
-    struct Token const weak *c = consumeToken(tokens, ID_TOKEN, "Identifier");
+    struct Token const weak *c = consumeToken(tokens, ID_TOKEN, "Identifier", "Simple Type");
     ret->name = c->raw;
 
     logMsg(LOG_INFO, 2, "Parsed Simple Type");
@@ -126,14 +158,19 @@ struct Type *parseType(struct Token const *const **tokens) {
             }
             break;
 
+        case L_PAREN_TOKEN: {
+                ret = (struct Type strong *) parseTupleType(tokens);
+            }
+            break;
+
         case L_BRACKET_TOKEN: {
                 ret = (struct Type strong *) parseArrayType(tokens);
             }
             break;
-        
+
         default:
-            logMsg(LOG_ERROR, 4, "Syntax Error: Unexpected Token at %d:%d: Expected Identifier or '[' but got '%s'", (**tokens)->line, (**tokens)->column, (**tokens)->raw);
-            exit(EXIT_FAILURE);
+            syntaxError("Type", (**tokens)->line, (**tokens)->column, "Identifier" DEFAULT ", " YELLOW 
+                    "'('" DEFAULT " or " YELLOW "'['", (**tokens)->raw);
     }
 
 	//struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
@@ -141,15 +178,15 @@ struct Type *parseType(struct Token const *const **tokens) {
 	return (struct Type *) ret;
 }
 
-struct Var *parseVar(struct Token const *const **tokens) {
+struct Var *parseParam(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Var");
 	struct Var *ret = (struct Var *) memAlloc(sizeof(struct Var));
 
-	consumeToken(tokens, ID_TOKEN, "Identifier");
+	ret->name = consumeToken(tokens, ID_TOKEN, "Identifier", "Var")->raw;
 	
-    consumeToken(tokens, COLON_TOKEN, "':'");
+    consumeToken(tokens, COLON_TOKEN, "':'", "Var");
 
-	parseType(tokens);
+	ret->type = parseType(tokens);
 
 	logMsg(LOG_INFO, 2, "Parsed Var");
     return ret;
@@ -173,7 +210,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct IntLiteral *lit =(struct IntLiteral *)  memAlloc(sizeof(struct IntLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = INT_LITERAL;
-				lit->val = ((struct IntToken *) consumeToken(tokens, INT_TOKEN, "Integer"))->value;
+				lit->val = ((struct IntToken *) consumeToken(tokens, INT_TOKEN, "Integer", "Factor"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created Int Literal with value: %d", lit->val);
 			}
@@ -182,7 +219,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct BoolLiteral strong *lit = (struct BoolLiteral strong *) memAlloc(sizeof(struct BoolLiteral)); 
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = BOOL_LITERAL;
-				lit->val = ((struct BoolToken *) consumeToken(tokens, BOOL_TOKEN, "Boolean"))->value;
+				lit->val = ((struct BoolToken *) consumeToken(tokens, BOOL_TOKEN, "Boolean", "Factor"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created Bool Literal with value: %d", lit->val);
 			}
@@ -191,7 +228,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct StringLiteral *lit = (struct StringLiteral *) memAlloc(sizeof(struct StringLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = STRING_LITERAL;
-				lit->val = ((struct StringToken *) consumeToken(tokens, STRING_TOKEN, "String"))->value;
+				lit->val = ((struct StringToken *) consumeToken(tokens, STRING_TOKEN, "String", "Factor"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created String Literal with value: %s", lit->val);
 			}
@@ -200,7 +237,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct CharLiteral *lit = (struct CharLiteral *) memAlloc(sizeof(struct CharLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = CHAR_LITERAL;
-				lit->val = ((struct CharToken *) consumeToken(tokens, CHAR_TOKEN, "Char"))->value;
+				lit->val = ((struct CharToken *) consumeToken(tokens, CHAR_TOKEN, "Char", "Factor"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Cheated Char Literal with value: %c", lit->val);
 			}
@@ -209,19 +246,19 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				struct ByteLiteral strong *lit = (struct ByteLiteral strong *) memAlloc(sizeof(struct ByteLiteral));
 				lit->base.base.type = LITERAL_EXPR;
 				lit->base.type = BYTE_LITERAL;
-				lit->val = ((struct ByteToken weak *) consumeToken(tokens, BYTE_TOKEN, "Byte"))->value;
+				lit->val = ((struct ByteToken weak *) consumeToken(tokens, BYTE_TOKEN, "Byte", "Factor"))->value;
 				ret = (struct Expr strong *) lit;
 				logMsg(LOG_INFO, 1, "Created Byte Literal with value: %d", lit->val);
 			}
 			break;
 		case L_PAREN_TOKEN: {
-				consumeToken(tokens, L_PAREN_TOKEN, "'('");
+				consumeToken(tokens, L_PAREN_TOKEN, "'('", "Factor");
 				ret = parseExpr(tokens);
-				consumeToken(tokens, R_PAREN_TOKEN, "')'");
+				consumeToken(tokens, R_PAREN_TOKEN, "')'", "Factor");
 			}
 			break;
 		case ID_TOKEN: {
-    			struct Token const weak *nameToken = consumeToken(tokens, ID_TOKEN, "Identifier");
+    			struct Token const weak *nameToken = consumeToken(tokens, ID_TOKEN, "Identifier", "Factor");
     			char const *name = nameToken->raw;
     			
     			switch ((**tokens)->type) { 
@@ -232,16 +269,16 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
     						callExpr->argCount = 0;
     						callExpr->args = NULL;
     						
-                            consumeToken(tokens, L_PAREN_TOKEN, "'('");
+                            consumeToken(tokens, L_PAREN_TOKEN, "'('", "Factor");
 
     						while ((**tokens)->type != R_PAREN_TOKEN) {
     							if (callExpr->argCount != 0) {
-    								consumeToken(tokens, COMMA_TOKEN, ",");
+    								consumeToken(tokens, COMMA_TOKEN, ",", "Factor");
     							}
     							pushExpr(&callExpr->args, &callExpr->argCount, parseExpr(tokens));
     						}
     	                    
-                            consumeToken(tokens, R_PAREN_TOKEN, ")");
+                            consumeToken(tokens, R_PAREN_TOKEN, ")", "Factor");
 
     						ret = (struct Expr *) callExpr;	
     					}
@@ -621,12 +658,6 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 	return stmt;
 }
 
-void pushVar(struct Var ***buffer, unsigned int *count, struct Var *var) {
-	(*count)++;
-	(*buffer) = memRealloc(*buffer, sizeof(struct Var *) * *count);
-	(*buffer)[(*count) - 1 ] = var;
-}
-
 struct Func *parseFunc(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Function");
 	struct Func *ret = memAlloc(sizeof(struct Func));
@@ -649,13 +680,7 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	(*tokens)++; // consume identifier
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 
-	logMsg(LOG_INFO, 1, "Attempting '(' Token Consumption");
-	if ((**tokens)->type != L_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'(' Token Consumption Successful");
+    consumeToken(tokens, L_PAREN_TOKEN, "')'", "Func");
 
 	// parse and consume params.
 	
@@ -663,7 +688,7 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	ret->paramCount = 0;
 
 	while ((**tokens)->type != R_PAREN_TOKEN) {
-		pushVar(&ret->params, &ret->paramCount, parseVar(tokens));
+		pushVar(&ret->params, &ret->paramCount, parseParam(tokens));
 	}
 
 	logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");
@@ -797,199 +822,6 @@ void pushUse(struct Use ***buffer, unsigned int *count, struct Use *use) {
 	(*buffer)[(*count) - 1 ] = use;
 }
 
-struct Func *parseMethodDef(struct Token const *const **tokens) {
-	struct Func *ret = (struct Func *) memAlloc(sizeof(struct Func));	
-
-	logMsg(LOG_INFO, 1, "Attempting 'func' token consumption");
-	if ((**tokens)->type != FUNC_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' but got '%s'");
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'func' token consumption succesful'");
-
-	logMsg(LOG_INFO, 1, "Attempting Id token consumpion");
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	ret->name = (**tokens)->raw;
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "Id token consumption succesful");
-
-	logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
-	if ((**tokens)->type != L_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'(' token consumptoin succesful");
-	
-	ret->paramCount = 0;
-	ret->params = NULL;
-	while ((**tokens)->type != R_PAREN_TOKEN) {
-		if (ret->paramCount != 0) {
-			logMsg(LOG_INFO, 1, "Attempting ',' token comma token consumption");
-			if ((**tokens)->type != COMMA_TOKEN) {
-				logMsg(LOG_ERROR, 4, "Invalid Token : Expected ',' but got '%s'");
-				exit(-1);
-			}
-			(*tokens)++;
-			logMsg(LOG_INFO, 1, "',' Token consumptoin successful");
-		}
-
-		struct Type *type = parseType(tokens);
-		struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
-		var->type = type;
-		var->name = "";
-		pushVar(&ret->params, &ret->paramCount, var);
-	}
-	logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
-	if ((**tokens)->type != R_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "')' token consumption successful");
-	
-	logMsg(LOG_INFO, 1, "Attempting '->' token consumption");
-	if ((**tokens)->type != ARROW_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '->' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'->' token consumption successful");
-		
-	ret->retType = parseType(tokens);
-	ret->body = NULL;
-	return ret;
-}
-
-struct Func *parseBuildDef(struct Token const *const **tokens) {
-	struct Func *ret = (struct Func *) memAlloc(sizeof(struct Func));	
-	logMsg(LOG_INFO, 1, "Attempting 'build' token consumption");
-	if ((**tokens)->type != BUILD_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'build' but got '%s'");
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'build' token consumption succesful'");
-
-	if ((**tokens)->type == ID_TOKEN) {
-		logMsg(LOG_INFO, 1, "Attempting Id token consumpion");
-		if ((**tokens)->type != ID_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		ret->name = (**tokens)->raw;
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "Id token consumption succesful");
-	} else {
-		ret->name = "_build";
-	}
-
-	logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
-	if ((**tokens)->type != L_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'(' token consumptoin succesful");
-	
-	ret->paramCount = 0;
-	ret->params = NULL;
-	while ((**tokens)->type != R_PAREN_TOKEN) {
-		if (ret->paramCount != 0) {
-			logMsg(LOG_INFO, 1, "Attempting ',' token comma token consumption");
-			if ((**tokens)->type != COMMA_TOKEN) {
-				logMsg(LOG_ERROR, 4, "Invalid Token : Expected ',' but got '%s'");
-				exit(-1);
-			}
-			(*tokens)++;
-			logMsg(LOG_INFO, 1, "',' Token consumptoin successful");
-		}
-
-		struct Type *type = parseType(tokens);
-		struct Var *var = (struct Var *) memAlloc(sizeof(struct Var));
-		var->type = type;
-		var->name = "";
-		pushVar(&ret->params, &ret->paramCount, var);
-	}
-	logMsg(LOG_INFO, 1, "Attempting ')' token consumption");
-	if ((**tokens)->type != R_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	struct SimpleType *voidType = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
-	voidType->base.type = SIMPLE_TYPE;
-
-	voidType->name = "Void";
-	ret->retType = (struct Type *) voidType;
-	ret->body = NULL;
-	return ret;	
-}
-
-struct ClassDef *parseClassDef(struct Token const *const **tokens) {
-	struct ClassDef *classDef = (struct ClassDef *) memAlloc(sizeof(struct ClassDef));
-
-	struct Class *class = memAlloc(sizeof(struct Class));
-			
-	logMsg(LOG_INFO, 1, "Attempting 'class' token consumption");
-	if ((**tokens)->type != CLASS_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'class' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'class' token consumption successful");
-	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	class->name = (**tokens)->raw;
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "Id token consumption successful");
-	logMsg(LOG_INFO, 1, "Attempting '{' token consumption");
-	if ((**tokens)->type != L_BRACE_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '{' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'{' token consumption successful");
-	class->funcs = NULL;
-	class->funcCount = 0;
-	class->builds = NULL;
-	class->buildCount = 0;
-	while ((**tokens)->type != R_BRACE_TOKEN) {
-		switch ((**tokens)->type) {
-			case FUNC_TOKEN: {
-					struct Func *func = parseMethodDef(tokens);
-					pushFunc(&class->funcs, &class->funcCount, func);
-				}
-				break;
-			case BUILD_TOKEN: {
-					struct Func *func = parseBuildDef(tokens);
-					pushFunc(&class->builds, &class->buildCount, func);  
-				}
-				break;
-			default:	
-				logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' but got '%s'", (**tokens)->raw);
-				exit(-1);
-		}
-	}
-	logMsg(LOG_INFO, 1, "Attempting '}' token consumption");
-	if ((**tokens)->type != R_BRACE_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '}' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'}' token consumption successful");
-			
-	classDef->class = class;
-	return classDef;
-}
-
 struct FuncDef *parseFuncDef(struct Token const *const **tokens) {
 	struct FuncDef *funcDef = (struct FuncDef *) memAlloc(sizeof(struct FuncDef));
 	
@@ -1068,68 +900,39 @@ struct Def *parseDef(struct Token const *const **tokens) {
 	struct Def def;
 	struct Def *out;
 	struct Use *use = (struct Use *) memAlloc(sizeof(struct Use));
-	logMsg(LOG_INFO, 2, "Parsing Use");
-
-	logMsg(LOG_INFO, 1, "Attempting 'from' token consumption");
-	if ((**tokens)->type != FROM_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'from' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'from' token consumption successful");
+	logMsg(LOG_INFO, 2, "Parsing Def");
 
 	use->names = NULL;
 	use->nameCount = 0;
 
-	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	pushString(&use->names, &use->nameCount, (**tokens)->raw);
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "Id token consumption successful");
-
-	while ((**tokens)->type == DOUBLE_COLON_TOKEN) {
-		logMsg(LOG_INFO, 1, "Attempting '::' token consumption");
-		if ((**tokens)->type != DOUBLE_COLON_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected '::' but got ''%s");
-			exit(-1);
-		}
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "'::' Token Consumption Successful");
-		logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-		if ((**tokens)->type != ID_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		pushString(&use->names, &use->nameCount, (**tokens)->raw);
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "Id token consumption successful");
-	}
+    switch ((**tokens)->type) {
+        case FROM_TOKEN: {
+            	consumeToken(tokens, FROM_TOKEN, "'from'", "Def");
+        	    pushString(&use->names, &use->nameCount, consumeToken(tokens, ID_TOKEN, "Identifier", "Def")->raw);
+     
+                while ((**tokens)->type == DOUBLE_COLON_TOKEN) {
+     	            consumeToken(tokens, DOUBLE_COLON_TOKEN, "'::'", "Def");
+        		    pushString(&use->names, &use->nameCount, consumeToken(tokens, ID_TOKEN, "Identifier", "Def")->raw);
+         	    }
+            }
+            break;
+        case EXT_TOKEN: {
+                consumeToken(tokens, EXT_TOKEN, "'ext'", "Def");
+            }
+            break;
+        default:
+            syntaxError("Def", (**tokens)->line, (**tokens)->column, "'from'" DEFAULT " or " YELLOW "'ext'", (**tokens)->raw);
+    }
 
 	def.use = use;
 
-	logMsg(LOG_INFO, 1, "Attempting 'def' token consumption");
-	if ((**tokens)->type != DEF_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'def' but got '%s'", (**tokens)->raw);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'def' token consumption successful");
-
+	consumeToken(tokens, DEF_TOKEN, "'def'", "Def");
 	switch ((**tokens)->type) {
 		case FUNC_TOKEN: {
 				struct FuncDef *funcDef = parseFuncDef(tokens);
 				funcDef->base = def;
 				funcDef->base.type = FUNC_DEF;
 				out = (struct Def *) funcDef;
-			}
-			break;
-		case CLASS_TOKEN: {
-				struct ClassDef *classDef = parseClassDef(tokens);
-				classDef->base = def;
-				classDef->base.type = CLASS_DEF;
-				out = (struct Def *) classDef;
 			}
 			break;
 		default:
@@ -1141,10 +944,33 @@ struct Def *parseDef(struct Token const *const **tokens) {
 	return out;
 }
 
+struct TypeAlias strong *parseTypeAlias(struct Token const strong *const strong *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Type Alias");
+    struct TypeAlias strong *ret = memAlloc(sizeof(struct TypeAlias));
+    
+    consumeToken(tokens, TYPE_TOKEN, "'types'", "Type Alias");
+    
+    struct Token weak *id = consumeToken(tokens, ID_TOKEN, "Identifier", "Type Alias");
+    ret->name = id->raw;
+
+    consumeToken(tokens, COLON_TOKEN, "':'", "Type Alias");
+
+    ret->type = parseType(tokens);
+
+    logMsg(LOG_INFO, 2, "Parsed Type Alias");
+    return ret;
+}
+
 void pushDef(struct Def ***buffer, unsigned int *count, struct Def *def) {
 	(*count)++;
 	(*buffer) = memRealloc(*buffer, sizeof(struct Def *) * *count);
 	(*buffer)[(*count) - 1 ] = def;
+}
+
+void pushTypeAlias(struct TypeAlias strong *strong *weak *buffer, unsigned int weak *count, struct TypeAlias strong *typeAlias) {
+    (*count)++;
+    (*buffer) = memRealloc(*buffer, sizeof(struct TypeAlias strong *) * *count);
+    (*buffer)[(*count) - 1] = typeAlias;
 }
 
 struct Module parseModule(struct Token const *const **tokens) {
@@ -1152,7 +978,9 @@ struct Module parseModule(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Module");
 	module.nameCount = 0;
 	module.names = parseModuleName(tokens, &module.nameCount);
-	module.funcCount = 0;
+    module.typeAliasCount = 0;
+    module.typeAliases = NULL;
+    module.funcCount = 0;
 	module.funcs = NULL;
 	module.includes = NULL;
 	module.includeCount = 0;
@@ -1166,12 +994,19 @@ struct Module parseModule(struct Token const *const **tokens) {
 			case USE_TOKEN:
 				pushUse(&module.includes, &module.includeCount, parseUse(tokens));
 				break;
-			case FROM_TOKEN:
+            case EXT_TOKEN:
+            case FROM_TOKEN:
 				pushDef(&module.defs, &module.defCount, parseDef(tokens));
 				break;
-			default:
-				logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'func' keyword not '%s'", (**tokens)->raw);
-				exit(-1);
+	        case TYPE_TOKEN:
+                pushTypeAlias(&module.typeAliases, &module.typeAliasCount, parseTypeAlias(tokens));
+                break;
+            default:
+				syntaxError("Module", (**tokens)->line, (**tokens)->column, "'func'" DEFAULT ", " YELLOW
+                                                                            "'use'" DEFAULT ", " YELLOW 
+                                                                            "'type'" DEFAULT ", " YELLOW
+                                                                            "'def'" DEFAULT " or " YELLOW
+                                                                            "'ext'", (**tokens)->raw);
 		}
 	}
 	logMsg(LOG_INFO, 2, "Parsed Module");

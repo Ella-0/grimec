@@ -51,7 +51,7 @@ int main(int argc, char const **argv) {
 		
 		logTokens(tokens);
 		struct Module tree = parse(tokens);
-//		codeGenLLVM(&tree);
+		codeGenLLVM(&tree);
 		
 		delModule(tree);
 
