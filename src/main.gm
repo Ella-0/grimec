@@ -18,7 +18,7 @@ ext def func memFree([UByte]) -> Void
 
 ext def func memLog() -> Void
 
-func main() -> Int {
+func main(argc: Int, argv: [[UByte]]) -> Int {
 
 	setLogLevel(1);
     var fileName: [UByte] := "main.gm";

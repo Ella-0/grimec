@@ -713,7 +713,10 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	ret->paramCount = 0;
 
 	while ((**tokens)->type != R_PAREN_TOKEN) {
-		pushVar(&ret->params, &ret->paramCount, parseParam(tokens));
+        if (ret->paramCount != 0) {
+            consumeToken(tokens, COMMA_TOKEN, "','", "Func");
+        }
+        pushVar(&ret->params, &ret->paramCount, parseParam(tokens));
 	}
 
 	logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");

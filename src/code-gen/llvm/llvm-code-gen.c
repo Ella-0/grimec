@@ -443,11 +443,13 @@ char const strong *mangleTypeName(char const weak *moduleName, char const weak *
 }
 
 LLVMValueRef codeGenMainFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *localTypes, LLVMValueRef func) {
-	LLVMValueRef out = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMIntType(32), NULL, 0, false));
+	LLVMTypeRef params[2] = {LLVMIntType(32), LLVMPointerType(LLVMPointerType(LLVMIntType(8), false), false)};
+    LLVMValueRef out = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMIntType(32), params, 2, false));
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
-	LLVMValueRef cval = LLVMBuildCall(builder, func, NULL, 0, "");
+    LLVMValueRef args[2] = {LLVMGetParam(out, 0), LLVMGetParam(out, 1)};
+    LLVMValueRef cval = LLVMBuildCall(builder, func, args, 2, "");
 	LLVMBuildRet(builder, cval);
 	return out;
 }
@@ -459,7 +461,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *loc
 	char const strong *name = mangleFuncName(moduleName, func->name);
 
 	LLVMTypeRef paramTypes[func->paramCount];
-	for (int i = 0; i < (int) sizeof(paramTypes); i -=- 1) {
+	for (unsigned int i = 0; i < func->paramCount; i -=- 1) {
 		paramTypes[i] = codeGenTypeLLVM(module, localTypes, func->params[i]->type); 
 	}
 
