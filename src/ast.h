@@ -95,6 +95,7 @@ enum LiteralType {
 	STRING_LITERAL,
 	CHAR_LITERAL,
 	BYTE_LITERAL,
+    ARRAY_LITERAL,
 };
 
 struct LiteralExpr {
@@ -124,6 +125,13 @@ struct CharLiteral {
 struct BoolLiteral {
 	struct LiteralExpr base;
 	bool val;
+};
+
+struct ArrayLiteral {
+    struct LiteralExpr base;
+    bool typed;
+    struct Type strong *type;
+    int64_t count;
 };
 
 struct StringLiteral {
@@ -272,4 +280,4 @@ struct Module {
 	struct Def strong *strong *defs;
 };
 
-void delModule(struct Module module);
+void delModule(struct Module strong *module);

@@ -251,7 +251,32 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 				logMsg(LOG_INFO, 1, "Created Byte Literal with value: %d", lit->val);
 			}
 			break;
-		case L_PAREN_TOKEN: {
+        case L_BRACKET_TOKEN: {
+                struct ArrayLiteral strong *lit = (struct ArrayLiteral strong *) memAlloc(sizeof(struct ArrayLiteral));
+                lit->base.base.type = LITERAL_EXPR;
+                lit->base.type = ARRAY_LITERAL;
+                consumeToken(tokens, L_BRACKET_TOKEN, "'['", "Factor");
+                switch ((**tokens)->type) {
+                    case SEMI_COLON_TOKEN: {
+                            lit->typed = false;
+                            lit->type = NULL;
+                        }
+                        break;
+                    default: {
+                            lit->typed = true;
+                            lit->type = parseType(tokens);
+                        }
+                        break;
+                }
+                consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Factor");
+
+                lit->count = ((struct IntToken weak *) consumeToken(tokens, INT_TOKEN, "Int", "Factor"))->value;
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Factor");
+                ret = (struct Expr strong *) lit;
+                logMsg(LOG_INFO, 1, "Created Array Literal with size: %d", lit->count);
+            }
+            break;
+        case L_PAREN_TOKEN: {
 				consumeToken(tokens, L_PAREN_TOKEN, "'('", "Factor");
 				ret = parseExpr(tokens);
 				consumeToken(tokens, R_PAREN_TOKEN, "')'", "Factor");
@@ -973,33 +998,33 @@ void pushTypeAlias(struct TypeAlias strong *strong *weak *buffer, unsigned int w
     (*buffer)[(*count) - 1] = typeAlias;
 }
 
-struct Module parseModule(struct Token const *const **tokens) {
-	struct Module module;
+struct Module strong *parseModule(struct Token const *const **tokens) {
+	struct Module strong *module = memAlloc(sizeof(struct Module));
 	logMsg(LOG_INFO, 2, "Parsing Module");
-	module.nameCount = 0;
-	module.names = parseModuleName(tokens, &module.nameCount);
-    module.typeAliasCount = 0;
-    module.typeAliases = NULL;
-    module.funcCount = 0;
-	module.funcs = NULL;
-	module.includes = NULL;
-	module.includeCount = 0;
-	module.defs = NULL;
-	module.defCount = 0;
+	module->nameCount = 0;
+	module->names = parseModuleName(tokens, &module->nameCount);
+    module->typeAliasCount = 0;
+    module->typeAliases = NULL;
+    module->funcCount = 0;
+	module->funcs = NULL;
+	module->includes = NULL;
+	module->includeCount = 0;
+	module->defs = NULL;
+	module->defCount = 0;
 	while ((**tokens)->type != EOF_TOKEN) {
 		switch ((**tokens)->type) {
 			case FUNC_TOKEN:
-				pushFunc(&module.funcs, &module.funcCount, parseFunc(tokens));
+				pushFunc(&module->funcs, &module->funcCount, parseFunc(tokens));
 				break;
 			case USE_TOKEN:
-				pushUse(&module.includes, &module.includeCount, parseUse(tokens));
+				pushUse(&module->includes, &module->includeCount, parseUse(tokens));
 				break;
             case EXT_TOKEN:
             case FROM_TOKEN:
-				pushDef(&module.defs, &module.defCount, parseDef(tokens));
+				pushDef(&module->defs, &module->defCount, parseDef(tokens));
 				break;
 	        case TYPE_TOKEN:
-                pushTypeAlias(&module.typeAliases, &module.typeAliasCount, parseTypeAlias(tokens));
+                pushTypeAlias(&module->typeAliases, &module->typeAliasCount, parseTypeAlias(tokens));
                 break;
             default:
 				syntaxError("Module", (**tokens)->line, (**tokens)->column, "'func'" DEFAULT ", " YELLOW
@@ -1013,6 +1038,6 @@ struct Module parseModule(struct Token const *const **tokens) {
 	return module;
 }
 
-struct Module parse(struct Token const *const *tokens) {
+struct Module strong *parse(struct Token const *const *tokens) {
 	return parseModule(&tokens);
 }

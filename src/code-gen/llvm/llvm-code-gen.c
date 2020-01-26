@@ -162,7 +162,25 @@ LLVMValueRef codeGenBoolLiteralLLVM(LLVMBuilderRef builder, struct Tree **localT
 	return intObj;
 }
 
+LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct Tree **localTypes, struct ArrayLiteral *lit) {
+	logMsg(LOG_INFO, 1, "Generating Array Literal with size %d", lit->count);
 
+    LLVMValueRef string;
+
+    LLVMTypeRef type;
+    if (lit->typed) {
+        type = codeGenTypeLLVM(module, localTypes, lit->type);
+    } else {
+        type = LLVMIntType(8);
+    }
+
+    string = LLVMBuildArrayMalloc(builder, type, LLVMConstInt(LLVMIntType(32), lit->count, 0), "arr");
+    
+    //TODO 0 init
+
+    logMsg(LOG_INFO, 1, "Generated String Literal");
+	return string;
+}
 
 LLVMValueRef codeGenLiteralExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct Tree **localTypes, struct LiteralExpr *expr) {
 	switch (expr->type) {
@@ -176,7 +194,9 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder
 			return codeGenByteLiteralLLVM(builder, localTypes, (struct ByteLiteral weak *) expr);
 		case BOOL_LITERAL:
 			return codeGenBoolLiteralLLVM(builder, localTypes, (struct BoolLiteral weak *) expr);
-		default:
+        case ARRAY_LITERAL:
+            return codeGenArrayLiteralLLVM(module, builder, localTypes, (struct ArrayLiteral weak *) expr);
+        default:
 			logMsg(LOG_ERROR, 4, "Invalid Literal Type!");
 			exit(-1);
 	}

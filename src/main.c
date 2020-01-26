@@ -38,7 +38,7 @@ void logTokens(struct Token const *const *tokens) {
 	}
 }
 
-int main(int argc, char const **argv) {
+/*int main(int argc, char const **argv) {
 
 	setLogLevel(1);
 	while (argc > 1) {
@@ -50,8 +50,8 @@ int main(int argc, char const **argv) {
 		struct Token const *const *tokens = lex(source);
 		
 		logTokens(tokens);
-		struct Module tree = parse(tokens);
-		codeGenLLVM(&tree);
+		struct Module strong *tree = parse(tokens);
+		codeGenLLVM(tree);
 		
 		delModule(tree);
 
@@ -63,4 +63,4 @@ int main(int argc, char const **argv) {
 	memLog();
 
 	return 0;
-}
+}*/

@@ -165,22 +165,23 @@ void delDef(struct Def strong *def) {
 	memFree(def);
 }
 
-void delModule(struct Module module) {
+void delModule(struct Module strong *module) {
 	logMsg(LOG_INFO, 3, "Deleting AST");
-	for (unsigned int i = 0; i < module.nameCount; i ++) {
+	for (unsigned int i = 0; i < module->nameCount; i ++) {
 		//memFree(module.names[i]);
 	}
-	memFree(module.names);
-	for (unsigned int i = 0; i < module.includeCount; i++) {
-		memFree(module.includes[i]);
+	memFree(module->names);
+	for (unsigned int i = 0; i < module->includeCount; i++) {
+		memFree(module->includes[i]);
 	}
-	memFree(module.includes);
-	for (unsigned int i = 0; i < module.funcCount; i++) {
-		delFunc(module.funcs[i]);
+	memFree(module->includes);
+	for (unsigned int i = 0; i < module->funcCount; i++) {
+		delFunc(module->funcs[i]);
 	}
-	memFree(module.funcs);
-	for (unsigned int i = 0; i < module.defCount; i++) {
-		delDef(module.defs[i]);
+	memFree(module->funcs);
+	for (unsigned int i = 0; i < module->defCount; i++) {
+		delDef(module->defs[i]);
 	}
-	memFree(module.defs);
+	memFree(module->defs);
+    memFree(module);
 }

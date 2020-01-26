@@ -1,11 +1,43 @@
-mod grimec
+mod grimec::main
 
-type String : [UByte]
+ext def func setLogLevel(Int) -> Void
+
+ext def func readFile([UByte]) -> [UByte]
+
+ext def func lex([UByte]) -> []
+
+ext def func parse([]) -> []
+
+ext def func codeGenLLVM([]) -> []
+
+ext def func delModule([]) -> Void
+
+ext def func delTokens([]) -> Void
+
+ext def func memFree([UByte]) -> Void
+
+ext def func memLog() -> Void
 
 func main() -> Int {
-    var source : [UByte] := "
-		func main() -> Int {
-			ret = 10;
-		}
-	";
+
+	setLogLevel(1);
+    var fileName: [UByte] := "main.gm";
+
+	var source: [UByte] := readFile(fileName);
+	
+	var tokens: [] := lex(source);
+	
+	var tree: [] := parse(tokens);
+	
+    codeGenLLVM(tree);
+		
+	delModule(tree);
+
+	delTokens(tokens);
+		
+	memFree(source);
+		
+	memLog();
+
+    ret := 0;
 }
