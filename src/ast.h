@@ -60,12 +60,20 @@ enum ExprType {
 	UNARY_EXPR,
 	BINARY_EXPR,
 	VAR_EXPR,
+    INDEX_EXPR,
 	CALL_EXPR,
 	METHOD_CALL_EXPR,
 };
 
 struct Expr {
 	enum ExprType type;
+    struct Type *evalType;
+};
+
+struct IndexExpr {
+    struct Expr base;
+    struct Expr *rhs;
+    struct Expr *index;
 };
 
 struct CallExpr {
@@ -131,7 +139,7 @@ struct ArrayLiteral {
     struct LiteralExpr base;
     bool typed;
     struct Type strong *type;
-    int64_t count;
+    struct Expr *count;
 };
 
 struct StringLiteral {

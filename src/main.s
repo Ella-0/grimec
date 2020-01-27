@@ -15,13 +15,10 @@ grimec_main_main:                       # @grimec_main_main
 	.cfi_offset %rbx, -32
 	.cfi_offset %r14, -24
 	.cfi_offset %r15, -16
+	movq	%rsi, %rbx
 	movl	$1, %edi
 	callq	setLogLevel
-	movl	$8, %edi
-	callq	malloc
-	movabsq	$30794221580018029, %rcx # imm = 0x6D672E6E69616D
-	movq	%rcx, (%rax)
-	movq	%rax, %rdi
+	movq	8(%rbx), %rdi
 	callq	readFile
 	movq	%rax, %r14
 	movq	%rax, %rdi

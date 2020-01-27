@@ -53,6 +53,8 @@ void treeListDel(struct TreeList strong *this) {
 }
 
 
+LLVMValueRef codeGenExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr);
+
 LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Tree **localTypes, struct Type *type) {
 	logMsg(LOG_INFO, 2, "Started Type Code Gen");
 	LLVMTypeRef ret;
@@ -162,7 +164,7 @@ LLVMValueRef codeGenBoolLiteralLLVM(LLVMBuilderRef builder, struct Tree **localT
 	return intObj;
 }
 
-LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct Tree **localTypes, struct ArrayLiteral *lit) {
+LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *vars, struct Tree **funcs, struct Tree **localTypes, struct ArrayLiteral *lit) {
 	logMsg(LOG_INFO, 1, "Generating Array Literal with size %d", lit->count);
 
     LLVMValueRef string;
@@ -174,7 +176,7 @@ LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builde
         type = LLVMIntType(8);
     }
 
-    string = LLVMBuildArrayMalloc(builder, type, LLVMConstInt(LLVMIntType(32), lit->count, 0), "arr");
+    string = LLVMBuildArrayMalloc(builder, type, codeGenExprLLVM(module, builder, vars, funcs, localTypes, lit->count), "arr");
     
     //TODO 0 init
 
@@ -182,7 +184,7 @@ LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builde
 	return string;
 }
 
-LLVMValueRef codeGenLiteralExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct Tree **localTypes, struct LiteralExpr *expr) {
+LLVMValueRef codeGenLiteralExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *vars, struct Tree **funcs, struct Tree **localTypes, struct LiteralExpr *expr) {
 	switch (expr->type) {
 		case INT_LITERAL:
 			return codeGenIntLiteralLLVM(builder, localTypes, (struct IntLiteral *) expr);
@@ -195,14 +197,12 @@ LLVMValueRef codeGenLiteralExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder
 		case BOOL_LITERAL:
 			return codeGenBoolLiteralLLVM(builder, localTypes, (struct BoolLiteral weak *) expr);
         case ARRAY_LITERAL:
-            return codeGenArrayLiteralLLVM(module, builder, localTypes, (struct ArrayLiteral weak *) expr);
+            return codeGenArrayLiteralLLVM(module, builder, vars, funcs, localTypes, (struct ArrayLiteral weak *) expr);
         default:
 			logMsg(LOG_ERROR, 4, "Invalid Literal Type!");
 			exit(-1);
 	}
 }
-
-LLVMValueRef codeGenExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr);
 
 LLVMValueRef codeGenBinaryExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct BinaryExpr *expr) {
 	LLVMValueRef ret;
@@ -292,12 +292,19 @@ LLVMValueRef codeGenMethodCallLLVM(LLVMModuleRef module, LLVMBuilderRef builder,
 	return ret;
 }
 
+LLVMValueRef codeGenIndexExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct IndexExpr *expr) {
+    LLVMValueRef rhs = codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->rhs);
+    LLVMValueRef index = codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->index);
+    LLVMValueRef ret = LLVMBuildLoad(builder, LLVMBuildGEP(builder, rhs, &index, 1, ""), "");
+    return ret;
+}
+
 LLVMValueRef codeGenExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Expr *expr) {
 	LLVMValueRef ret;
 	switch (expr->type) {
 		case LITERAL_EXPR:
 			logMsg(LOG_INFO, 2, "Building Literal Expression!");
-			ret = codeGenLiteralExprLLVM(module, builder, types, (struct LiteralExpr *) expr);
+			ret = codeGenLiteralExprLLVM(module, builder, localVarSymbols, funcs, types, (struct LiteralExpr *) expr);
 			break;
 		case BINARY_EXPR:
 			logMsg(LOG_INFO, 2, "Building Binary Expression!");
@@ -314,7 +321,10 @@ LLVMValueRef codeGenExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struc
 		case METHOD_CALL_EXPR:
 			ret = codeGenMethodCallLLVM(module, builder, localVarSymbols, funcs, types, (struct MethodCallExpr *) expr);
 			break;
-		default:
+        case INDEX_EXPR:
+            ret = codeGenIndexExprLLVM(module, builder, localVarSymbols, funcs, types, (struct IndexExpr *) expr);
+            break;
+        default:
 			logMsg(LOG_ERROR, 4, "Invalid Expression Type!");
 			exit(-1);
 	}

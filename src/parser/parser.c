@@ -208,8 +208,11 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 	switch ((**tokens)->type) {
 		case INT_TOKEN: {
 				struct IntLiteral *lit =(struct IntLiteral *)  memAlloc(sizeof(struct IntLiteral));
-				lit->base.base.type = LITERAL_EXPR;
-				lit->base.type = INT_LITERAL;
+                lit->base.base.type = LITERAL_EXPR;
+				lit->base.base.evalType = memAlloc(sizeof(struct SimpleType));
+                lit->base.base.evalType->type = SIMPLE_TYPE;
+                ((struct SimpleType *) lit->base.base.evalType)->name = heapString("Int");
+                lit->base.type = INT_LITERAL;
 				lit->val = ((struct IntToken *) consumeToken(tokens, INT_TOKEN, "Integer", "Factor"))->value;
 				ret = (struct Expr *) lit;
 				logMsg(LOG_INFO, 1, "Created Int Literal with value: %d", lit->val);
@@ -270,7 +273,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
                 }
                 consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Factor");
 
-                lit->count = ((struct IntToken weak *) consumeToken(tokens, INT_TOKEN, "Int", "Factor"))->value;
+                lit->count = parseExpr(tokens);
                 consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Factor");
                 ret = (struct Expr strong *) lit;
                 logMsg(LOG_INFO, 1, "Created Array Literal with size: %d", lit->count);
@@ -330,9 +333,30 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 	return ret;
 }
 
+struct Expr *parseIndex(struct Token strong const *strong const *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Index");
+    struct Expr *ret = parseFactor(tokens);
+    switch ((**tokens)->type) {
+        case L_BRACKET_TOKEN: {
+                consumeToken(tokens, L_BRACKET_TOKEN, "'['", "Index");
+                struct IndexExpr *indexExpr = memAlloc(sizeof(struct IndexExpr));
+                indexExpr->base.type = INDEX_EXPR;
+                indexExpr->rhs = ret;
+                indexExpr->index = parseExpr(tokens);
+                ret = indexExpr;
+                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Index");
+            }
+            break;
+        
+        default:
+            break;
+    }
+    return ret;
+}
+
 struct Expr *parseMember(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Member");
-	struct Expr *ret = parseFactor(tokens);
+	struct Expr *ret = parseIndex(tokens);
 	if ((**tokens)->type == DOT_TOKEN) {
 		logMsg(LOG_INFO, 1, "Attempting '.' token consumption");
 		if ((**tokens)->type != DOT_TOKEN) {
