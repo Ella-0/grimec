@@ -1,4 +1,6 @@
 .ycm_extra_conf.py
+compile_commands.json
 build/*
+.clangd
 grimec
 a.out

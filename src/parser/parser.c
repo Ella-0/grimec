@@ -333,7 +333,7 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
 	return ret;
 }
 
-struct Expr *parseIndex(struct Token strong const *strong const *weak *tokens) {
+struct Expr strong *parseIndex(struct Token strong const *strong const *weak *tokens) {
     logMsg(LOG_INFO, 2, "Parsing Index");
     struct Expr *ret = parseFactor(tokens);
     switch ((**tokens)->type) {
@@ -343,7 +343,7 @@ struct Expr *parseIndex(struct Token strong const *strong const *weak *tokens) {
                 indexExpr->base.type = INDEX_EXPR;
                 indexExpr->rhs = ret;
                 indexExpr->index = parseExpr(tokens);
-                ret = indexExpr;
+                ret = (struct Expr strong *) indexExpr;
                 consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Index");
             }
             break;
@@ -358,22 +358,9 @@ struct Expr *parseMember(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Member");
 	struct Expr *ret = parseIndex(tokens);
 	if ((**tokens)->type == DOT_TOKEN) {
-		logMsg(LOG_INFO, 1, "Attempting '.' token consumption");
-		if ((**tokens)->type != DOT_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected '.' but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "'.' token consumption successful");
-
+	    consumeToken(tokens, DOT_TOKEN, "'.'", "Member");
 		logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-		if ((**tokens)->type != ID_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		char const *name = (**tokens)->raw;
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "Id token consumption successful");
+		char const *name = consumeToken(tokens, ID_TOKEN, "Identifier", "Member")->raw;
 
 		struct MethodCallExpr *callExpr = (struct MethodCallExpr *) memAlloc(sizeof(struct MethodCallExpr));
 		callExpr->base.type = METHOD_CALL_EXPR;
@@ -381,34 +368,17 @@ struct Expr *parseMember(struct Token const *const **tokens) {
 		callExpr->argCount = 0;
 		callExpr->args = NULL;
 		callExpr->lhs = ret;
-		logMsg(LOG_INFO, 1, "Attempting '(' token consumption");
-		if ((**tokens)->type != L_PAREN_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "'(' token consumption successful");
-		
-		while ((**tokens)->type != R_PAREN_TOKEN) {
+    
+        consumeToken(tokens, L_PAREN_TOKEN, "'('", "Member");
+
+        while ((**tokens)->type != R_PAREN_TOKEN) {
 			if (callExpr->argCount != 0) {
-				logMsg(LOG_INFO, 1, "Attempting ',' token consumption");
-				if ((**tokens)->type != COMMA_TOKEN) {
-					logMsg(LOG_ERROR, 4, "Invalid Token: Expected ',' but got '%s'", (**tokens)->raw);
-					exit(-1);
-				}
-				(*tokens)++;
-				logMsg(LOG_INFO, 1, "',' token consumption succesful");
+				consumeToken(tokens, COMMA_TOKEN, "','", "Member");
 			}
 			pushExpr(&callExpr->args, &callExpr->argCount, parseExpr(tokens));
 		}
 	
-		logMsg(LOG_INFO, 1, "Attempting ')' token conumption");
-		if ((**tokens)->type != R_PAREN_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-			exit(-1);
-		}
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "')' token consumption successful");
+		consumeToken(tokens, R_PAREN_TOKEN, "Identifier", "Member");
 		ret = (struct Expr *) callExpr;	
 	}
 	return ret;
@@ -450,14 +420,16 @@ struct Expr *parseTerm(struct Token const *const **tokens) {
 	return ret;
 }
 
-struct Expr *parseExpr(struct Token const *const **tokens) {
+
+
+struct Expr *parseArithExpr(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Expr");
 	struct Expr *ret = parseTerm(tokens);
 	while ((**tokens)->type == ADD_TOKEN || (**tokens)->type == SUB_TOKEN) {
 		switch ((**tokens)->type) {
 			case ADD_TOKEN: {
 					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
-					(*tokens)++;
+					consumeToken(tokens, ADD_TOKEN, "'+'", "Expr");
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
 					binaryRet->rhs = parseTerm(tokens);
@@ -467,7 +439,7 @@ struct Expr *parseExpr(struct Token const *const **tokens) {
 				break;
 			case SUB_TOKEN: {
 					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
-					(*tokens)++;
+				    consumeToken(tokens, SUB_TOKEN, "'-'", "Expr");
 					binaryRet->base.type = BINARY_EXPR;
 					binaryRet->lhs = ret;
 					binaryRet->rhs = parseTerm(tokens);
@@ -485,6 +457,93 @@ struct Expr *parseExpr(struct Token const *const **tokens) {
 	return ret;
 }
 
+struct Expr strong *parseLogicFactor(struct Token const strong *const strong *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Expr");
+    struct Expr strong *ret = parseArithExpr(tokens);
+ 	while ((**tokens)->type == ADD_TOKEN || (**tokens)->type == SUB_TOKEN) {
+		switch ((**tokens)->type) {
+			case G_THAN_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+					consumeToken(tokens, G_THAN_TOKEN, "'>'", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = G_THAN_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+			case L_THAN_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+				    consumeToken(tokens, L_THAN_TOKEN, "'<'", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = L_THAN_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+ 
+            case EQUALS_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+				    consumeToken(tokens, EQUALS_TOKEN, "'='", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = EQUALS_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+    
+			case NG_THAN_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+				    consumeToken(tokens, NG_THAN_TOKEN, "'!>'", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = NG_THAN_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+    
+            case NL_THAN_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+				    consumeToken(tokens, NL_THAN_TOKEN, "'!<'", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = NL_THAN_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+    
+
+		    case N_EQUALS_TOKEN: {
+					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
+				    consumeToken(tokens, N_EQUALS_TOKEN, "'!='", "Expr");
+					binaryRet->base.type = BINARY_EXPR;
+					binaryRet->lhs = ret;
+					binaryRet->rhs = parseTerm(tokens);
+					binaryRet->op = N_EQUALS_OP;
+					ret = (struct Expr *) binaryRet;
+				}
+				break;
+    
+			default:
+				logMsg(LOG_ERROR, 4, "Unimplemented Operation '%s'", (**tokens)->raw);
+				exit(-1);
+		}
+	}
+    logMsg(LOG_INFO, 2, "Parsed Expr");
+    return ret;
+}
+
+struct Expr strong *parseExpr(struct Token const strong *const strong *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Expr");
+    struct Expr strong *ret = parseLogicFactor(tokens);
+    logMsg(LOG_INFO, 2, "Parsed Expr");
+    return ret;
+}
+
 struct Stmt *parseStmt(struct Token const *const **tokens);
 
 void pushStmt(struct Stmt ***buffer, unsigned int *count, struct Stmt *stmt) {
@@ -499,13 +558,7 @@ struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
 
 	out->base.type = BLOCK_STMT;
 
-	logMsg(LOG_INFO, 1, "Attempting '{' Token Consumption");
-	if ((**tokens)->type != L_BRACE_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '{' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}	
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'{' Token Consumption Successful");
+    consumeToken(tokens, L_BRACE_TOKEN, "'{'", "Block Stmt");
 
 	out->stmts = NULL;
 	out->stmtCount = 0;
@@ -513,8 +566,8 @@ struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
 	while ((**tokens)->type != R_BRACE_TOKEN) {
 		pushStmt(&out->stmts, &out->stmtCount, parseStmt(tokens));
 	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'}' Token Consumption Successful");
+	
+    consumeToken(tokens, R_BRACE_TOKEN, "'}'", "Block Stmt");
 
 	logMsg(LOG_INFO, 2, "Parsed Block Stmt");
 	return (struct Stmt *) out;
@@ -555,9 +608,9 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 
 	out->var->type = parseType(tokens);
 
-	logMsg(LOG_INFO, 1, "Attempting '=' token consumption");
-	if ((**tokens)->type != EQUALS_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '=' but got '%s'", (**tokens)->raw);
+	logMsg(LOG_INFO, 1, "Attempting ':=' token consumption");
+	if ((**tokens)->type != ASSIGN_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected ':=' but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
 	(*tokens)++;
@@ -593,13 +646,13 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 	(*tokens)++;
 	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
 
-	logMsg(LOG_INFO, 1, "Attempting '=' token consumption");
-	if ((**tokens)->type != EQUALS_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '=' but got '%s'", (**tokens)->raw);
+	logMsg(LOG_INFO, 1, "Attempting ':=' token consumption");
+	if ((**tokens)->type != ASSIGN_TOKEN) {
+		logMsg(LOG_ERROR, 4, "Invalid Token: Expected ':=' but got '%s'", (**tokens)->raw);
 		exit(-1);
 	}
 	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'=' Token Consumption Successful");
+	logMsg(LOG_INFO, 1, "':=' Token Consumption Successful");
 
 	out->init = parseExpr(tokens);
 	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
@@ -689,7 +742,7 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 			stmt = parseVarStmt(tokens);
 			break;
 		case ID_TOKEN:
-			if (((*tokens)[1])->type != EQUALS_TOKEN) {
+			if (((*tokens)[1])->type != ASSIGN_TOKEN) {
 				stmt = parseExprStmt(tokens);
 			} else {
 				stmt = parseAssignStmt(tokens);
@@ -1002,7 +1055,7 @@ struct TypeAlias strong *parseTypeAlias(struct Token const strong *const strong 
     
     consumeToken(tokens, TYPE_TOKEN, "'types'", "Type Alias");
     
-    struct Token weak *id = consumeToken(tokens, ID_TOKEN, "Identifier", "Type Alias");
+    struct Token const weak *id = consumeToken(tokens, ID_TOKEN, "Identifier", "Type Alias");
     ret->name = id->raw;
 
     consumeToken(tokens, COLON_TOKEN, "':'", "Type Alias");

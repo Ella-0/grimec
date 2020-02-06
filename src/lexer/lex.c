@@ -307,6 +307,48 @@ static struct Token strong *genExtToken(char const strong *value) {
     return (struct Token strong *) token;
 }
 
+static struct Token strong *genAssignToken(char const strong *value) {
+    struct AssignToken strong *token = memAlloc(sizeof(struct AssignToken));
+    token->base.type = ASSIGN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genGThanToken(char const strong *value) {
+    struct GThanToken strong *token = memAlloc(sizeof(struct GThanToken));
+    token->base.type = G_THAN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genLThanToken(char const strong *value) {
+    struct LThanToken strong *token = memAlloc(sizeof(struct LThanToken));
+    token->base.type = L_THAN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genNEqualsToken(char const strong *value) {
+    struct NEqualsToken strong *token = memAlloc(sizeof(struct NEqualsToken));
+    token->base.type = ASSIGN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genNGThanToken(char const strong *value) {
+    struct NGThanToken strong *token = memAlloc(sizeof(struct NGThanToken));
+    token->base.type = ASSIGN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
+static struct Token strong *genNLThanToken(char const strong *value) {
+    struct NLThanToken strong *token = memAlloc(sizeof(struct NLThanToken));
+    token->base.type = ASSIGN_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -317,8 +359,16 @@ static struct Pattern PATTERNS[] = {
 	{R_BRACKET_TOKEN, "", "^\\]$", &genRBracket},
 	{L_BRACE_TOKEN, "", "^\\{$", &genLBrace},
 	{R_BRACE_TOKEN, "", "^\\}$", &genRBrace},
-	{EQUALS_TOKEN, "", "^:=$", &genEquals},
-	{DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},
+    {G_THAN_TOKEN, "", "^>$", &genGThanToken},
+    {L_THAN_TOKEN, "", "^<$", &genLThanToken},
+    {NG_THAN_TOKEN, "", "^!>", &genNGThanToken},
+    {NL_THAN_TOKEN, "", "^!<", &genNLThanToken},
+    {NG_THAN_TOKEN, "", "^<=", &genNGThanToken},
+    {NL_THAN_TOKEN, "", ">=", &genNLThanToken},
+    {EQUALS_TOKEN, "", "^=$", &genEquals},
+    {N_EQUALS_TOKEN, "", "^!=$", &genNEqualsToken},
+    {ASSIGN_TOKEN, "", "^:=$", &genAssignToken},
+    {DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},
 	{COLON_TOKEN, "", "^:$", &genColon},
 	{ARROW_TOKEN, "", "^->$", &genArrow},
 	{FUNC_TOKEN, "", "^func$", &genFunc},
@@ -346,7 +396,7 @@ static struct Pattern PATTERNS[] = {
 	{TYPE_TOKEN, "", "^type$", &genTypeToken},
     {EXT_TOKEN, "", "^ext$", &genExtToken},
     //{1000, "", "^//.*\n", &genWhitespace},
-	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace},
+	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace}
 };
 
 struct Pattern NULL_PATTERN = {NULL_TOKEN, NULL, NULL, &null};

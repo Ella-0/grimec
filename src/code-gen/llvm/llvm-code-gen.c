@@ -586,7 +586,7 @@ LLVMTypeRef codeGenMethodDefLLVM(LLVMModuleRef module, struct Tree **localTypes,
 }
 
 LLVMValueRef codeGenMemAllocLLVM(LLVMModuleRef module) {
-    
+    return NULL;    
 }
 
 LLVMTypeRef codeGenNamedTupleLLVM(LLVMModuleRef module, struct Tree strong *weak *localTypes, struct TypeAlias weak *typeAlias) {
@@ -608,6 +608,7 @@ LLVMTypeRef codeGenTypeAliasLLVM(LLVMModuleRef module, struct Tree strong *weak 
         ret = codeGenTypeLLVM(module, localTypes, typeAlias->type);
     }
     *localTypes = treeAdd(*localTypes, typeAlias->name, ret);
+    return ret;
 }
 
 void codeGenLLVM(struct Module weak *module) {

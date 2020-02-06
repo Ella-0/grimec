@@ -48,9 +48,16 @@ enum TokenType {
     DOT_TOKEN,
 	BUILD_TOKEN,
 
+    G_THAN_TOKEN,
+    L_THAN_TOKEN,
+    NG_THAN_TOKEN,
+    NL_THAN_TOKEN,
+
 	DOUBLE_COLON_TOKEN,
 	EQUALS_TOKEN,
-	SEMI_COLON_TOKEN,
+    ASSIGN_TOKEN,
+    N_EQUALS_TOKEN,
+    SEMI_COLON_TOKEN,
 };
 
 struct Token {
@@ -213,5 +220,29 @@ struct TypeToken {
 };
 
 struct ExtToken {
+    struct Token base;
+};
+
+struct AssignToken {
+    struct Token base;
+};
+
+struct GThanToken {
+    struct Token base;
+};
+
+struct LThanToken {
+    struct Token base;
+};
+
+struct NEqualsToken {
+    struct Token base;
+};
+
+struct NGThanToken {
+    struct Token base;
+};
+
+struct NLThanToken {
     struct Token base;
 };

@@ -1,10 +1,6 @@
 #pragma once
 #include <stdint.h>
-
-struct Var {
-	const char weak *name;
-	struct Type strong *type;
-};
+#include <stdbool.h>
 
 enum TypeType {
 	BUILDIN_TYPE,
@@ -18,6 +14,12 @@ enum TypeType {
 struct Type {
 	enum TypeType type;	
 };
+
+struct Var {
+	char const weak *name;
+	struct Type strong *type;
+};
+
 
 enum BuildinTypeType {
 	INT_BUILDIN_TYPE,
@@ -162,6 +164,12 @@ enum BinaryOp {
 	SUB_OP,
 	MUL_OP,
 	DIV_OP,
+    EQUALS_OP,
+    N_EQUALS_OP,
+    G_THAN_OP,
+    L_THAN_OP,
+    NG_THAN_OP,
+    NL_THAN_OP,
 };
 
 struct BinaryExpr {

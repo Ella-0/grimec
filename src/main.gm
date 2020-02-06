@@ -27,25 +27,25 @@ ext def func puts([UByte]) -> Void
 func main(argc: Int, argv: [[UByte]]) -> Int {
 
 	setLogLevel(1);
-    var fileName: [UByte] := argv[1];
 
-	var source: [UByte] := readFile(fileName);
+    if (argc > 1) {
+        var fileName: [UByte] := argv[1];
+
+        var source: [UByte] := readFile(fileName);
 	
-	var tokens: [Token] := lex(source);
+	    var tokens: [Token] := lex(source);
 	
-	var tree: Module := parse(tokens);
+	    var tree: Module := parse(tokens);
 	
-    codeGenLLVM(tree);
+        codeGenLLVM(tree);
 		
-	delModule(tree);
+	    delModule(tree);
 
-	delTokens(tokens);
+	    delTokens(tokens);
 		
-	memFree(source);
+	    memFree(source);
 		
-	memLog();
-
-    var test: [UByte] := [UByte;2];
-
+	    memLog();
+    }
     ret := 0;
 }
