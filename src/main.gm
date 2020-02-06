@@ -2,19 +2,21 @@ mod grimec::main
 
 type Module : []
 
+type Token : []
+
 ext def func setLogLevel(Int) -> Void
 
 ext def func readFile([UByte]) -> [UByte]
 
-ext def func lex([UByte]) -> []
+ext def func lex([UByte]) -> [Token]
 
-ext def func parse([]) -> Module
+ext def func parse([Token]) -> Module
 
 ext def func codeGenLLVM(Module) -> []
 
 ext def func delModule(Module) -> Void
 
-ext def func delTokens([]) -> Void
+ext def func delTokens([Token]) -> Void
 
 ext def func memFree([UByte]) -> Void
 
@@ -29,9 +31,9 @@ func main(argc: Int, argv: [[UByte]]) -> Int {
 
 	var source: [UByte] := readFile(fileName);
 	
-	var tokens: [] := lex(source);
+	var tokens: [Token] := lex(source);
 	
-	var tree: [] := parse(tokens);
+	var tree: Module := parse(tokens);
 	
     codeGenLLVM(tree);
 		
@@ -42,6 +44,8 @@ func main(argc: Int, argv: [[UByte]]) -> Int {
 	memFree(source);
 		
 	memLog();
+
+    var test: [UByte] := [UByte;2];
 
     ret := 0;
 }
