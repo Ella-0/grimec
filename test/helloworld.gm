@@ -1,14 +1,9 @@
 mod test::helloworld
 
-from std::core def class Int {
-}
+ext def func puts([UByte]) -> Int
 
-from std::core def class String {
-}
-
-from std::io def func println(String) -> Void
-
-func main() -> Int {
-	println("Hello, World!");
-	ret = 0;
+func main(argc: Int, argv: [[UByte]]) -> Int {
+    var greeting: [UByte] := "Hello, World!"
+    puts(greeting)
+	ret := 0
 }
