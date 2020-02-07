@@ -9,10 +9,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: update
-      run: |
-        sudo apt update
-        sudo apt remove llvm
-        sudo apt install llvm-9
     - name: Archlinux CMake builder
       uses: codehz/arch-cmake-builder@v0.1.3
