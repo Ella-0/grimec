@@ -147,21 +147,9 @@ LLVMValueRef codeGenByteLiteralLLVM(LLVMBuilderRef builder, struct Tree **localT
 
 LLVMValueRef codeGenBoolLiteralLLVM(LLVMBuilderRef builder, struct Tree **localTypes, struct BoolLiteral *lit) {
 	logMsg(LOG_INFO, 1, "Generating Bool Literal with value %d", lit->val);
-	LLVMValueRef cInt = LLVMConstInt(LLVMIntType(8), lit->val, false);
-	struct TypeLLVM *intType = treeLookUp(*localTypes, "Bool");
-	LLVMValueRef intObj = LLVMBuildCall(builder, intType->init, NULL, 0, "");
-
-	LLVMValueRef literalArgs[2] = {intObj, cInt};
-	LLVMBuildCall(builder, treeLookUp(*intType->methods, "_literal"), literalArgs, 2, "");
-
-	//LLVMValueRef litFunc = LLVMBuildLoad(builder, LLVMBuildStructGEP(builder, intObj, 2, ""), "");
-
-
-	/*LLVMTypeRef literalArgTypes[2] = {LLVMPointerType(intType->type, false), LLVMIntType(32)};
-
-	litFunc = LLVMBuildBitCast(builder, litFunc, LLVMPointerType(LLVMFunctionType(LLVMVoidType(), literalArgTypes, 2, false), false), "");*/
-	logMsg(LOG_INFO, 1, "Generated Bool Literal", lit->val);
-	return intObj;
+	LLVMValueRef cInt = LLVMConstInt(LLVMIntType(1), lit->val, false);
+    logMsg(LOG_INFO, 1, "Generated Bool Literal", lit->val);
+	return cInt;
 }
 
 LLVMValueRef codeGenArrayLiteralLLVM(LLVMModuleRef module, LLVMBuilderRef builder, struct TreeList *vars, struct Tree **funcs, struct Tree **localTypes, struct ArrayLiteral *lit) {
@@ -219,7 +207,16 @@ LLVMValueRef codeGenBinaryExprLLVM(LLVMModuleRef module, LLVMBuilderRef builder,
 		case DIV_OP:
 			ret = LLVMBuildSDiv(builder, codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->rhs), "");
 			break;
-		default:
+        case L_THAN_OP:
+            ret = LLVMBuildICmp(builder, LLVMIntSLT, codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->rhs), "");
+            break;
+        case G_THAN_OP:
+            ret = LLVMBuildICmp(builder, LLVMIntSGT, codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->rhs), "");
+            break;
+        case EQUALS_OP:
+            ret = LLVMBuildICmp(builder, LLVMIntEQ, codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->lhs), codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, expr->rhs), "");
+            break;
+        default:
 			logMsg(LOG_ERROR, 4, "Unimplemented Op");
 			exit(EXIT_FAILURE);
 	}
@@ -377,15 +374,11 @@ LLVMValueRef codeGenIfStmtLLVM(LLVMModuleRef module, LLVMValueRef functionRef, L
 	LLVMBasicBlockRef ifElse = LLVMAppendBasicBlock(functionRef, "ifElse");
 	LLVMBasicBlockRef ifExit = LLVMAppendBasicBlock(functionRef, "ifExit");
 
-	LLVMValueRef boolObj = codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, stmt->condition);
-	struct TypeLLVM *intType = treeLookUp(*types, "Bool");
+	LLVMValueRef cond = codeGenExprLLVM(module, builder, localVarSymbols, funcs, types, stmt->condition);
 
-	LLVMValueRef cvalFunc = treeLookUp(*intType->methods, "_cval");
-	LLVMValueRef cval = LLVMBuildCall(builder, cvalFunc, &boolObj, 1, "");
-	cval = LLVMBuildIntCast(builder, cval, LLVMIntType(1), "");
-	LLVMBuildCondBr(builder, cval, ifThen, ifElse);
+	LLVMBuildCondBr(builder, cond, ifThen, ifElse);
 	LLVMPositionBuilderAtEnd(builder, ifThen);
-//	LLVMValueRef outa = codeGenStmtLLVM(functionRef, builder, localVarSymbols, funcs, types, stmt->ifBody);
+	LLVMValueRef outa = codeGenStmtLLVM(module, functionRef, builder, localVarSymbols, funcs, types, stmt->ifBody);
 	LLVMBuildBr(builder, ifExit);
 	
 	LLVMPositionBuilderAtEnd(builder, ifElse);
