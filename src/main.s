@@ -6,7 +6,7 @@
 grimec_main_main:                       # @grimec_main_main
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%r15
+	pushq	%rbp
 	.cfi_def_cfa_offset 16
 	pushq	%r14
 	.cfi_def_cfa_offset 24
@@ -14,16 +14,20 @@ grimec_main_main:                       # @grimec_main_main
 	.cfi_def_cfa_offset 32
 	.cfi_offset %rbx, -32
 	.cfi_offset %r14, -24
-	.cfi_offset %r15, -16
+	.cfi_offset %rbp, -16
 	movq	%rsi, %rbx
+	movl	%edi, %ebp
 	movl	$1, %edi
 	callq	setLogLevel
+	cmpl	$2, %ebp
+	jl	.LBB0_2
+# %bb.1:                                # %ifThen
 	movq	8(%rbx), %rdi
 	callq	readFile
 	movq	%rax, %r14
 	movq	%rax, %rdi
 	callq	lex
-	movq	%rax, %r15
+	movq	%rax, %rbp
 	movq	%rax, %rdi
 	callq	parse
 	movq	%rax, %rbx
@@ -31,17 +35,18 @@ grimec_main_main:                       # @grimec_main_main
 	callq	codeGenLLVM
 	movq	%rbx, %rdi
 	callq	delModule
-	movq	%r15, %rdi
+	movq	%rbp, %rdi
 	callq	delTokens
 	movq	%r14, %rdi
 	callq	memFree
 	callq	memLog
+.LBB0_2:                                # %ifExit
 	xorl	%eax, %eax
 	popq	%rbx
 	.cfi_def_cfa_offset 24
 	popq	%r14
 	.cfi_def_cfa_offset 16
-	popq	%r15
+	popq	%rbp
 	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end0:

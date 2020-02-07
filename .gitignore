@@ -4,3 +4,4 @@ build/*
 .clangd
 grimec
 a.out
+vgcore.*

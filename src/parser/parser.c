@@ -460,7 +460,12 @@ struct Expr *parseArithExpr(struct Token const *const **tokens) {
 struct Expr strong *parseLogicFactor(struct Token const strong *const strong *weak *tokens) {
     logMsg(LOG_INFO, 2, "Parsing Expr");
     struct Expr strong *ret = parseArithExpr(tokens);
- 	while ((**tokens)->type == ADD_TOKEN || (**tokens)->type == SUB_TOKEN) {
+ 	while ((**tokens)->type == G_THAN_TOKEN 
+            || (**tokens)->type == L_THAN_TOKEN
+            || (**tokens)->type == NG_THAN_TOKEN
+            || (**tokens)->type == NL_THAN_TOKEN
+            || (**tokens)->type == EQUALS_TOKEN
+            || (**tokens)->type == N_EQUALS_TOKEN) {
 		switch ((**tokens)->type) {
 			case G_THAN_TOKEN: {
 					struct BinaryExpr *binaryRet = (struct BinaryExpr *) memAlloc(sizeof(struct BinaryExpr));
@@ -529,8 +534,7 @@ struct Expr strong *parseLogicFactor(struct Token const strong *const strong *we
 				break;
     
 			default:
-				logMsg(LOG_ERROR, 4, "Unimplemented Operation '%s'", (**tokens)->raw);
-				exit(-1);
+                syntaxError("Logical Factor", (**tokens)->line, (**tokens)->column, "'>', '!>', '<', '!<', '=' or '!='", (**tokens)->raw);
 		}
 	}
     logMsg(LOG_INFO, 2, "Parsed Expr");
