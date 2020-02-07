@@ -9,6 +9,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: update
+      run: |
+        apt install llvm-9
     - name: build
       run: |
         mkdir build
