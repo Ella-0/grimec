@@ -11,6 +11,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: update
       run: |
+        sudo apt update
         sudo apt remove llvm
         sudo apt install llvm-9
     - name: build
