@@ -10,4 +10,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Archlinux CMake builder
-      uses: Edward-0/arch-cmake-builder@v0.2.1
+      uses: Edward-0/arch-cmake-builder@master
