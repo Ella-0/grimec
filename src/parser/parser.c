@@ -620,14 +620,10 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 	(*tokens)++;
 
 	out->init = parseExpr(tokens);
-	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
-	if ((**tokens)->type != SEMI_COLON_TOKEN) {
-		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "';' Token consumption successful");
-	logMsg(LOG_INFO, 2, "Parsed Var Stmt");
+    
+    //consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Var Stmt");
+
+    logMsg(LOG_INFO, 2, "Parsed Var Stmt");
 	return (struct Stmt *) out;
 }
 
@@ -659,14 +655,10 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 1, "':=' Token Consumption Successful");
 
 	out->init = parseExpr(tokens);
-	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
-	if ((**tokens)->type != SEMI_COLON_TOKEN) {
-		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "';' Token consumption successful");
-	logMsg(LOG_INFO, 2, "Parsed Assign Stmt");
+
+    //consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Assign Stmt");
+
+    logMsg(LOG_INFO, 2, "Parsed Assign Stmt");
 	return (struct Stmt *) out;
 }
 
@@ -676,13 +668,8 @@ struct Stmt *parseExprStmt(struct Token const *const **tokens) {
 	ret->base.type = EXPR_STMT;
 	ret->expr = parseExpr(tokens);
 
-	logMsg(LOG_INFO, 1, "Attempting ';' token consumption");
-	if ((**tokens)->type != SEMI_COLON_TOKEN) {
-		logMsg(LOG_ERROR, 1, "Invalid Token: Expected ';' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "';' Token consumption successful");
+    //consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Expr Stmt");
+
 	logMsg(LOG_INFO, 2, "Parsed Expr");
 	return (struct Stmt *) ret;
 }

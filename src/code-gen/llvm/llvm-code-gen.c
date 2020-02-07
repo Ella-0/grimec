@@ -388,15 +388,15 @@ LLVMValueRef codeGenIfStmtLLVM(LLVMModuleRef module, LLVMValueRef functionRef, L
 	}
 	LLVMBuildBr(builder, ifExit);
 	LLVMPositionBuilderAtEnd(builder, ifExit);
-	//LLVMValueRef ret = LLVMBuildPhi(builder, LLVMTypeOf(outa), "");
+	LLVMValueRef ret = LLVMBuildPhi(builder, LLVMTypeOf(outa), "");
 	if (outb != NULL) {
-		//LLVMValueRef values[2] = {outa, outb};
-		//LLVMBasicBlockRef blocks[2] = {ifThen, ifElse};
-		//LLVMAddIncoming(ret, values, blocks, 2);
+		LLVMValueRef values[2] = {outa, outb};
+		LLVMBasicBlockRef blocks[2] = {ifThen, ifElse};
+		LLVMAddIncoming(ret, values, blocks, 2);
 	} else {
-
+        LLVMAddIncoming(ret, &outa, &ifThen, 1);
 	}
-	return NULL;
+	return ret;
 }
 
 LLVMValueRef codeGenStmtLLVM(LLVMModuleRef module, LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree **funcs, struct Tree **types, struct Stmt *stmt) {
