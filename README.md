@@ -3,8 +3,10 @@ The new static compiler for the grime programming language.
 
 ## Building
 ### Dependencies
- * CMake
  * LLVM
+#### Make
+ * CMake
+ * Clang
 ```
 $ mkdir build
 $ cd build
