@@ -2,7 +2,7 @@
 #include "../ast.h"
 #include "../util/mem.h"
 #include "../util/log.h"
-#include "type-resolve.h"
+#include "type-resolver.h"
 
 void typeResolutionError(char const weak *type) {
     logMsg(LOG_ERROR, 4, "Error Resolving Type of %s", type);
