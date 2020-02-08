@@ -13,3 +13,10 @@ $ cd build
 $ cmake ..
 $ make
 ```
+
+## Usage
+
+```grimec <file>```
+
+This will output LLVM-IR for the grime file passed to the compiler. To turn this into an executable you can do the following
+```grimec <file> | llc | cc -x assembler -``` This will output an executable named `a.out`
