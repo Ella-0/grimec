@@ -103,22 +103,40 @@ struct Type strong *parseArrayType(struct Token const *const **tokens) {
 
     struct ArrayType strong *ret = (struct ArrayType strong *) memAlloc(sizeof(struct ArrayType));
     ret->base.type = ARRAY_TYPE;
-    
-    consumeToken(tokens, L_BRACKET_TOKEN, "'['", "Array Type");
-    
+
     switch ((**tokens)->type) {
+        case L_BRACKET_TOKEN:
+            consumeToken(tokens, L_BRACKET_TOKEN, "'['", "Array Type");
+            ret->owning = true;
+            break;
+        case L_BRACE_TOKEN:
+            consumeToken(tokens, L_BRACE_TOKEN, "'{'", "Array Type");
+            ret->owning = false;
+            break;
+        default:
+            syntaxError("Array Type", (**tokens)->line, (**tokens)->column, "'[' or '{'", (**tokens)->raw);
+    }
+
+    if ((**tokens)->type == MUT_TOKEN) {
+        consumeToken(tokens, MUT_TOKEN, "'mut'", "Array Type");
+        ret->mut = true;
+    } else {
+        ret->mut = false;
+    }
+
+    switch ((**tokens)->type) {
+        case R_BRACE_TOKEN:
         case R_BRACKET_TOKEN: {
                 ret->typed = false;
-                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
             }
             break;
         
         case SEMI_COLON_TOKEN: {
                 ret->sized = true;
+                ret->typed = false;
                 consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Array Type");
                 struct IntToken const weak *sizeToken = (struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer", "Array Type");
                 ret->elementCount = sizeToken->value;                  
-                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
             }
             break;
 
@@ -126,9 +144,14 @@ struct Type strong *parseArrayType(struct Token const *const **tokens) {
                 ret->typed = true;
                 ret->type = parseType(tokens);
                 ret->sized = false;
-                consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
             }
             break;
+    }
+
+    if (ret->owning) {
+        consumeToken(tokens, R_BRACKET_TOKEN, "']'", "Array Type");
+    } else {
+        consumeToken(tokens, R_BRACE_TOKEN, "'}'", "Array Type");
     }
 
     return (struct Type strong *) ret;
@@ -163,6 +186,7 @@ struct Type *parseType(struct Token const *const **tokens) {
             }
             break;
 
+        case L_BRACE_TOKEN:
         case L_BRACKET_TOKEN: {
                 ret = (struct Type strong *) parseArrayType(tokens);
             }
@@ -172,7 +196,8 @@ struct Type *parseType(struct Token const *const **tokens) {
             syntaxError("Type", (**tokens)->line, (**tokens)->column, 
                     "Identifier" DEFAULT ", " YELLOW 
                     "'('" DEFAULT " or " YELLOW 
-                    "'['", (**tokens)->raw);
+                    "'['" DEFAULT " or " YELLOW
+                    "'{'", (**tokens)->raw);
     }
 
 	//struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));

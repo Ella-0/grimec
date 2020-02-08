@@ -58,6 +58,7 @@ enum TokenType {
     ASSIGN_TOKEN,
     N_EQUALS_TOKEN,
     SEMI_COLON_TOKEN,
+    MUT_TOKEN,
 };
 
 struct Token {
@@ -248,5 +249,9 @@ struct NLThanToken {
 };
 
 struct ElseToken {
+    struct Token base;
+};
+
+struct MutToken {
     struct Token base;
 };

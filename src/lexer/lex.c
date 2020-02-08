@@ -356,6 +356,13 @@ static struct Token strong *genElseToken(char const strong *value) {
     return (struct Token strong *) token;
 }
 
+static struct Token strong *genMutToken(char const strong *value) {
+    struct MutToken strong *token = memAlloc(sizeof(struct MutToken));
+    token->base.type = MUT_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -403,6 +410,7 @@ static struct Pattern PATTERNS[] = {
 	{BYTE_TOKEN, "", "^[0-9_]+B$", &genByte},
 	{TYPE_TOKEN, "", "^type$", &genTypeToken},
     {EXT_TOKEN, "", "^ext$", &genExtToken},
+    {MUT_TOKEN, "", "^mut$", &genMutToken},
     //{1000, "", "^//.*\n", &genWhitespace},
 	{1000, "", "^[ \n\t\r\v]+$", &genWhitespace}
 };

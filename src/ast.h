@@ -41,6 +41,8 @@ struct SimpleType {
 struct ArrayType {
     struct Type base;
     bool typed;
+    bool owning;
+    bool mut;
     struct Type strong *type;
     bool sized;
     unsigned int elementCount;
