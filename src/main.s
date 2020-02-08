@@ -32,6 +32,8 @@ grimec_main_main:                       # @grimec_main_main
 	callq	parse
 	movq	%rax, %rbx
 	movq	%rax, %rdi
+	callq	resolveTypes
+	movq	%rbx, %rdi
 	callq	codeGenLLVM
 	movq	%rbx, %rdi
 	callq	delModule

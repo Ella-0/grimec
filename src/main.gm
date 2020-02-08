@@ -24,6 +24,8 @@ ext def func memLog() -> Void
 
 ext def func puts([UByte]) -> Void
 
+ext def func resolveTypes(Module) -> Void
+
 func main(argc: Int, argv: [[UByte]]) -> Int {
 
 	setLogLevel(1)
@@ -37,6 +39,8 @@ func main(argc: Int, argv: [[UByte]]) -> Int {
 	
 	    var tree: Module := parse(tokens)
 	
+        resolveTypes(tree)
+
         codeGenLLVM(tree)
 		
 	    delModule(tree)
