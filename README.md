@@ -16,7 +16,7 @@ $ make
 
 ## Usage
 
-````grimec <file>```
+```grimec <file>```
 
 This will output LLVM-IR for the grime file passed to the compiler. To turn this into an executable you can do the following
-```gricec <file> | llc | cc -x assembler -``` This will output an executable named `a.out`
+```grimec <file> | llc | cc -x assembler -``` This will output an executable named `a.out`
