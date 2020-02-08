@@ -8,10 +8,29 @@ void delVar(struct Var *var) {
 	memFree(var);
 }
 
+void delStmt(struct Stmt strong *stmt);
+
 void delExpr(struct Expr strong *expr) {
 	logMsg(LOG_INFO, 1, "Deleting Expr");
 	switch (expr->type) {
-		case VAR_EXPR: {	
+	case IF_EXPR: {
+			struct IfExpr strong *ifStmt = (struct IfExpr strong *) expr;
+				delExpr(ifStmt->condition);
+				delExpr(ifStmt->ifBody);
+				if (ifStmt->elseBody != NULL) {
+					delExpr(ifStmt->elseBody);
+				}
+			}
+			break;
+	case BLOCK_EXPR: {
+				struct BlockExpr strong *blockStmt = (struct BlockExpr strong *) expr;
+				for (unsigned int i = 0; i < blockStmt->stmtCount; i++) {
+					delStmt(blockStmt->stmts[i]);	
+				}
+				memFree(blockStmt->stmts);
+			}
+			break;
+	    case VAR_EXPR: {	
 			}
 			break;
 		case METHOD_CALL_EXPR: {
@@ -69,14 +88,6 @@ void delConditionalBlock(struct ConditionalBlock strong *conditionalBlock) {
 void delStmt(struct Stmt strong *stmt) {
 	logMsg(LOG_INFO, 1, "Deleting Stmt");
 	switch (stmt->type) {
-		case BLOCK_STMT: {
-				struct BlockStmt strong *blockStmt = (struct BlockStmt strong *) stmt;
-				for (unsigned int i = 0; i < blockStmt->stmtCount; i++) {
-					delStmt(blockStmt->stmts[i]);	
-				}
-				memFree(blockStmt->stmts);
-			}
-			break;
 		case EXPR_STMT: {
 				struct ExprStmt strong *exprStmt = (struct ExprStmt strong *) stmt;
 				delExpr(exprStmt->expr);
@@ -92,15 +103,6 @@ void delStmt(struct Stmt strong *stmt) {
 				struct AssignStmt strong *assignStmt = (struct AssignStmt strong *) stmt;
 				delExpr(assignStmt->init);
 				delVar(assignStmt->var);
-			}
-			break;
-		case IF_STMT: {
-				struct IfStmt strong *ifStmt = (struct IfStmt strong *) stmt;
-				delExpr(ifStmt->condition);
-				delStmt(ifStmt->ifBody);
-				if (ifStmt->elseBody != NULL) {
-					delStmt(ifStmt->elseBody);
-				}
 			}
 			break;
 		default:
@@ -119,7 +121,7 @@ void delFunc(struct Func strong *func) {
 	memFree(func->params);
 	memFree(func->retType);
 	if (func->body != NULL) {
-		delStmt(func->body);
+		delExpr(func->body);
 	} else {
 		logMsg(LOG_INFO, 1, "NULL body");
 	}

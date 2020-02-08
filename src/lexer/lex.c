@@ -349,6 +349,13 @@ static struct Token strong *genNLThanToken(char const strong *value) {
     return (struct Token strong *) token;
 }
 
+static struct Token strong *genElseToken(char const strong *value) {
+    struct ElseToken strong *token = memAlloc(sizeof(struct ElseToken));
+    token->base.type = ELSE_TOKEN;
+    token->base.raw = value;
+    return (struct Token strong *) token;
+}
+
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -366,6 +373,7 @@ static struct Pattern PATTERNS[] = {
     {NG_THAN_TOKEN, "", "^<=", &genNGThanToken},
     {NL_THAN_TOKEN, "", ">=", &genNLThanToken},
     {EQUALS_TOKEN, "", "^=$", &genEquals},
+    {ELSE_TOKEN, "", "^else$", &genElseToken},
     {N_EQUALS_TOKEN, "", "^!=$", &genNEqualsToken},
     {ASSIGN_TOKEN, "", "^:=$", &genAssignToken},
     {DOUBLE_COLON_TOKEN, "", "^::$", &genDoubleColon},

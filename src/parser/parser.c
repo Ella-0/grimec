@@ -169,8 +169,10 @@ struct Type *parseType(struct Token const *const **tokens) {
             break;
 
         default:
-            syntaxError("Type", (**tokens)->line, (**tokens)->column, "Identifier" DEFAULT ", " YELLOW 
-                    "'('" DEFAULT " or " YELLOW "'['", (**tokens)->raw);
+            syntaxError("Type", (**tokens)->line, (**tokens)->column, 
+                    "Identifier" DEFAULT ", " YELLOW 
+                    "'('" DEFAULT " or " YELLOW 
+                    "'['", (**tokens)->raw);
     }
 
 	//struct SimpleType *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
@@ -323,9 +325,8 @@ struct Expr strong *parseFactor(struct Token const *const **tokens) {
             }
 			break;
 		default:
-			logMsg(LOG_ERROR, 4, "Invalid Factor");
+            syntaxError("Factor", (**tokens)->line, (**tokens)->column, "Integer, Boolean, Character, Byte, String, '[', '(' or Identifier", (**tokens)->raw);
 			ret = NULL;
-			exit(-1);
 			break;
 	}
 
@@ -351,6 +352,7 @@ struct Expr strong *parseIndex(struct Token strong const *strong const *weak *to
         default:
             break;
     }
+    logMsg(LOG_INFO, 2, "Parsed Index");
     return ret;
 }
 
@@ -541,13 +543,6 @@ struct Expr strong *parseLogicFactor(struct Token const strong *const strong *we
     return ret;
 }
 
-struct Expr strong *parseExpr(struct Token const strong *const strong *weak *tokens) {
-    logMsg(LOG_INFO, 2, "Parsing Expr");
-    struct Expr strong *ret = parseLogicFactor(tokens);
-    logMsg(LOG_INFO, 2, "Parsed Expr");
-    return ret;
-}
-
 struct Stmt *parseStmt(struct Token const *const **tokens);
 
 void pushStmt(struct Stmt ***buffer, unsigned int *count, struct Stmt *stmt) {
@@ -556,11 +551,37 @@ void pushStmt(struct Stmt ***buffer, unsigned int *count, struct Stmt *stmt) {
 	(*buffer)[(*count) - 1 ] = stmt;
 }
 
-struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
-	logMsg(LOG_INFO, 2, "Parsing Block Stmt");
-	struct BlockStmt *out = (struct BlockStmt *) memAlloc(sizeof(struct BlockStmt));
+struct Expr strong *parseIfExpr(struct Token const weak *const weak *weak *tokens) {
+	logMsg(LOG_INFO, 2, "Parsing If Stmt");
+	struct IfExpr strong *ret = (struct IfExpr strong *) memAlloc(sizeof(struct IfExpr));
+	ret->base.type = IF_EXPR;
 
-	out->base.type = BLOCK_STMT;
+    consumeToken(tokens, IF_TOKEN, "'if'", "If Expr");
+
+    consumeToken(tokens, L_PAREN_TOKEN, "'('", "If Expr");
+
+	ret->condition = parseExpr(tokens);
+
+    consumeToken(tokens, R_PAREN_TOKEN, "')'", "If Expr");
+
+    ret->ifBody = parseExpr(tokens);
+
+	if ((**tokens)->type == ELSE_TOKEN) {	
+	    
+        consumeToken(tokens, ELSE_TOKEN, "'else'", "If Expr");
+
+		ret->elseBody = parseExpr(tokens);
+	} else {
+		ret->elseBody = NULL;
+	}
+	return (struct Expr strong *) ret;
+}
+
+struct Expr strong *parseBlockExpr(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing Block Stmt");
+	struct BlockExpr strong *out = (struct BlockExpr strong *) memAlloc(sizeof(struct BlockExpr));
+
+	out->base.type = BLOCK_EXPR;
 
     consumeToken(tokens, L_BRACE_TOKEN, "'{'", "Block Stmt");
 
@@ -574,7 +595,31 @@ struct Stmt *parseBlockStmt(struct Token const *const **tokens) {
     consumeToken(tokens, R_BRACE_TOKEN, "'}'", "Block Stmt");
 
 	logMsg(LOG_INFO, 2, "Parsed Block Stmt");
-	return (struct Stmt *) out;
+	return (struct Expr strong *) out;
+}
+
+struct Expr strong *parseControlFlowExpr(struct Token const strong *const strong *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Control Flow Expr");
+    struct Expr strong *ret;
+    switch ((**tokens)->type) {
+        case IF_TOKEN:
+            ret = parseIfExpr(tokens);            
+            break;
+        case L_BRACE_TOKEN:
+            ret = parseBlockExpr(tokens);
+            break;
+        default:
+            ret = parseLogicFactor(tokens);
+    }
+    logMsg(LOG_INFO, 2, "Parsed Control Flow Expr");
+    return ret;
+}
+
+struct Expr strong *parseExpr(struct Token const strong *const strong *weak *tokens) {
+    logMsg(LOG_INFO, 2, "Parsing Expr");
+    struct Expr strong *ret = parseControlFlowExpr(tokens);
+    logMsg(LOG_INFO, 2, "Parsed Expr");
+    return ret;
 }
 
 struct Stmt *parseVarStmt(struct Token const *const **tokens) {
@@ -582,25 +627,11 @@ struct Stmt *parseVarStmt(struct Token const *const **tokens) {
 	struct VarStmt *out = (struct VarStmt *) memAlloc(sizeof(struct VarStmt));
 	out->base.type = VAR_STMT;
 
-	logMsg(LOG_INFO, 1, "Attempting 'var' Token Consumption");
-	if ((**tokens)->type != VAR_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'var' but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'var' Token Consumption Successful");
+    consumeToken(tokens, VAR_TOKEN, "'var'", "Var Stmt");
 
-	logMsg(LOG_INFO, 1, "Attempting Id token consumption");
-	if ((**tokens)->type != ID_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected identifier but got '%s'", (**tokens)->raw);
-		exit(-1);
-	}
+    out->var = (struct Var *) memAlloc(sizeof(struct Var));
 
-	out->var = (struct Var *) memAlloc(sizeof(struct Var));
-
-	out->var->name = (**tokens)->raw;
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "Id Token Consumption Successful");
+	out->var->name = consumeToken(tokens, ID_TOKEN, "Identifier", "Var Stmt")->raw;
 
 	logMsg(LOG_INFO, 1, "Attempting ':' token consumption");
 	if ((**tokens)->type != COLON_TOKEN) {
@@ -663,73 +694,24 @@ struct Stmt *parseAssignStmt(struct Token const *const **tokens) {
 }
 
 struct Stmt *parseExprStmt(struct Token const *const **tokens) {
-	logMsg(LOG_INFO, 2, "Parsing Expr");
+	logMsg(LOG_INFO, 2, "Parsing Expr Stmt");
 	struct ExprStmt *ret = (struct ExprStmt *) memAlloc(sizeof(struct ExprStmt));
 	ret->base.type = EXPR_STMT;
 	ret->expr = parseExpr(tokens);
+ 
+    if ((**tokens)->type == SEMI_COLON_TOKEN) {
+        consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Expr Stmt");
+    }
 
-    //consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Expr Stmt");
-
-	logMsg(LOG_INFO, 2, "Parsed Expr");
+	logMsg(LOG_INFO, 2, "Parsed Expr Stmt");
 	return (struct Stmt *) ret;
-}
-
-struct Stmt strong *parseIfStmt(struct Token const weak *const weak *weak *tokens) {
-	logMsg(LOG_INFO, 2, "Parsing If Stmt");
-	struct IfStmt strong *ret = (struct IfStmt strong *) memAlloc(sizeof(struct IfStmt));
-	ret->base.type = IF_STMT;
-	logMsg(LOG_INFO, 1, "Attempting 'if' Token Consumption");
-	if ((**tokens)->type != IF_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'if' but got '%s'", (**tokens)->raw);
-		exit(EXIT_FAILURE);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'if' token consumption successful");
-
-	logMsg(LOG_INFO, 1, "Attempting '(' Token Consumption");
-	if ((**tokens)->type != L_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected '(' but got '%s'", (**tokens)->raw);
-		exit(EXIT_FAILURE);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "'(' token consumption successful");
-
-	ret->condition = parseExpr(tokens);
-
-	logMsg(LOG_INFO, 1, "Attempting ')' Token Consumption");
-	if ((**tokens)->type != R_PAREN_TOKEN) {
-		logMsg(LOG_ERROR, 4, "Invalid Token: Expected ')' but got '%s'", (**tokens)->raw);
-		exit(EXIT_FAILURE);
-	}
-	(*tokens)++;
-	logMsg(LOG_INFO, 1, "')' token consumption successful");
-
-	ret->ifBody = parseStmt(tokens);
-
-	if ((**tokens)->type == ELSE_TOKEN) {	
-		logMsg(LOG_INFO, 1, "Attempting 'else' Token Consumption");
-		if ((**tokens)->type != ELSE_TOKEN) {
-			logMsg(LOG_ERROR, 4, "Invalid Token: Expected 'else' but got '%s'", (**tokens)->raw);
-			exit(EXIT_FAILURE);
-		}
-		(*tokens)++;
-		logMsg(LOG_INFO, 1, "'else' token consumption successful");
-
-		ret->elseBody = parseStmt(tokens);
-	} else {
-		ret->elseBody = NULL;
-	}
-	return (struct Stmt strong *) ret;
 }
 
 struct Stmt *parseStmt(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Statement");
 	struct Stmt *stmt;
 	switch ((**tokens)->type) {
-		case L_BRACE_TOKEN:
-			stmt = parseBlockStmt(tokens);
-			break;
-		case VAR_TOKEN:
+        case VAR_TOKEN:
 			stmt = parseVarStmt(tokens);
 			break;
 		case ID_TOKEN:
@@ -739,12 +721,8 @@ struct Stmt *parseStmt(struct Token const *const **tokens) {
 				stmt = parseAssignStmt(tokens);
 			}
 			break;
-		case IF_TOKEN:
-			stmt = parseIfStmt(tokens);
-			break;
-		default:
-			logMsg(LOG_ERROR, 4, "Unexpected Token: %s", (**tokens)->raw);
-			exit(-1);
+	    default:
+            stmt = parseExprStmt(tokens);
 			break;
 	}
 	logMsg(LOG_INFO, 2, "Parsed Statement");
@@ -805,7 +783,7 @@ struct Func *parseFunc(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 1, "'->' Token Conumption Successful");
 
 	ret->retType = parseType(tokens);
-	ret->body = parseStmt(tokens);
+	ret->body = parseExpr(tokens);
 
 	logMsg(LOG_INFO, 2, "Parsed Function");
 	return ret;

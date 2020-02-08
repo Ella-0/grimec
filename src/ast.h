@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
+#include "util/mem.h"
 
 enum TypeType {
 	BUILDIN_TYPE,
@@ -65,6 +66,8 @@ enum ExprType {
     INDEX_EXPR,
 	CALL_EXPR,
 	METHOD_CALL_EXPR,
+    IF_EXPR,
+    BLOCK_EXPR,
 };
 
 struct Expr {
@@ -184,8 +187,6 @@ enum StmtType {
 	VAR_STMT,
 	ASSIGN_STMT,
 	EXPR_STMT,
-	BLOCK_STMT,
-	IF_STMT,
 };
 
 struct Stmt {
@@ -213,8 +214,8 @@ struct ExprStmt {
 	struct Expr strong *expr;
 };
 
-struct BlockStmt {
-	struct Stmt base;
+struct BlockExpr {
+	struct Expr base;
 	unsigned int stmtCount;
 	struct Stmt strong *strong *stmts;
 };
@@ -224,11 +225,11 @@ struct ConditionalBlock {
 	struct Stmt strong *body;
 };
 
-struct IfStmt {
-	struct Stmt base;
+struct IfExpr {
+	struct Expr base;
 	struct Expr strong *condition;
-	struct Stmt strong *ifBody;
-	struct Stmt strong *elseBody;
+	struct Expr strong *ifBody;
+	struct Expr strong *elseBody;
 };
 
 struct Func {
@@ -237,7 +238,7 @@ struct Func {
 	// Different sub types have different sizes
 	struct Var strong *strong *params;
 	struct Type strong *retType;
-	struct Stmt strong *body;
+	struct Expr strong *body;
 };
 
 struct Use {

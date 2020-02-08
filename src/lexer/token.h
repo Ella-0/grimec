@@ -246,3 +246,7 @@ struct NGThanToken {
 struct NLThanToken {
     struct Token base;
 };
+
+struct ElseToken {
+    struct Token base;
+};
