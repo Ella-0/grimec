@@ -159,12 +159,66 @@ struct Type strong *parseArrayType(struct Token const *const **tokens) {
 
 struct Type strong *parseSimpleType(struct Token const strong *const strong **weak tokens) {
     logMsg(LOG_INFO, 2, "Parsing Simple Type");
-    
-    struct SimpleType strong *ret = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
-    ret->base.type = SIMPLE_TYPE;
 
-    struct Token const weak *c = consumeToken(tokens, ID_TOKEN, "Identifier", "Simple Type");
-    ret->name = c->raw;
+    struct Type strong *ret;
+
+    char const weak *id = consumeToken(tokens, ID_TOKEN, "Identifier", "Simple Type")->raw;
+
+    if (!strcmp(id, "Void")) {
+        ret = memAlloc(sizeof(struct VoidType));
+        ret->type = VOID_TYPE;
+    } else if (!strcmp(id, "Bool")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = BOOL_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "Byte")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = BYTE_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "UByte")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = UBYTE_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "Short")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = SHORT_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "UShort")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = USHORT_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "Int")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = INT_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "UInt")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = UINT_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "Long")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = LONG_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else if (!strcmp(id, "ULong")) {
+        struct BuildinType strong *buildinType = memAlloc(sizeof(struct BuildinType));
+        buildinType->base.type = BUILDIN_TYPE;
+        buildinType->type = ULONG_BUILDIN_TYPE;
+        ret = (struct Type strong *) buildinType;
+    } else { 
+        struct SimpleType strong *simpleType = (struct SimpleType *) memAlloc(sizeof(struct SimpleType));
+        simpleType->base.type = SIMPLE_TYPE;
+        simpleType->name = id;
+        ret = (struct Type strong *) simpleType;
+    }
+
 
     logMsg(LOG_INFO, 2, "Parsed Simple Type");
     return (struct Type strong *) ret;

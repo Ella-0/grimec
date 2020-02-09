@@ -5,5 +5,5 @@ ext def func puts([UByte]) -> Int
 func main(argc: Int, argv: [[UByte]]) -> Int {
     var greeting: [UByte] := "Hello, World!"
     puts(greeting)
-	ret := 0
+    ret := 0
 }

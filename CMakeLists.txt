@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(grimec)
 enable_language(C ASM)
+enable_testing()
 
 set(CMAKE_C_COMPILER /usr/bin/clang)
 set(CMAKE_C_FLAGS -g)
@@ -17,6 +18,8 @@ file(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
 file(GLOB_RECURSE SOURCE ${PROJECT_SOURCE_DIR}/src/*.c)
 file(GLOB_RECURSE ASM ${PROJECT_SOURCE_DIR}/src/*.s)
 add_executable(grimec ${HEADERS} ${SOURCE} ${ASM})
+
+add_test(testFiles ./grimec test.gm)
 
 llvm_map_components_to_libnames(LLVM_LIBS core mcjit x86codegen)
 

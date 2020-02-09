@@ -85,7 +85,36 @@ LLVMTypeRef codeGenTypeLLVM(LLVMModuleRef module, struct Tree **localTypes, stru
                 }
 			}
             break;
-    
+            
+        case BUILDIN_TYPE: {
+                struct BuildinType weak *buildinType = (struct BuildinType weak *) type;
+                switch (buildinType->type) {
+                    case BOOL_BUILDIN_TYPE:
+                        ret = LLVMIntType(1);
+                        break;
+                    case BYTE_BUILDIN_TYPE:
+                    case UBYTE_BUILDIN_TYPE:
+                        ret = LLVMIntType(8);
+                        break;
+                    case SHORT_BUILDIN_TYPE:
+                    case USHORT_BUILDIN_TYPE:
+                        ret = LLVMIntType(16);
+                        break;
+                    case INT_BUILDIN_TYPE:
+                    case UINT_BUILDIN_TYPE:
+                        ret = LLVMIntType(32);
+                        break;
+                    case LONG_BUILDIN_TYPE:
+                    case ULONG_BUILDIN_TYPE:
+                        ret = LLVMIntType(64);
+                        break;
+                    default:
+                        logMsg(LOG_ERROR, 4, "Buildin Type not implemented");
+                        exit(EXIT_FAILURE);
+                }
+            }
+            break;
+
         case ARRAY_TYPE: {
                 struct ArrayType weak *arrayType = (struct ArrayType weak *) type; 
                 if (arrayType->typed) {

@@ -10,6 +10,8 @@ enum TypeType {
     TUPLE_TYPE,
     SIMPLE_TYPE,
 	GENERIC_TYPE,
+    FUNCTION_TYPE,
+    VOID_TYPE,
 };
 
 struct Type {
@@ -22,10 +24,20 @@ struct Var {
 };
 
 
+struct VoidType {
+    struct Type base;
+};
+
 enum BuildinTypeType {
-	INT_BUILDIN_TYPE,
-	STRING_BUILDIN_TYPE,
-	VOID_BUILDIN_TYPE,
+    BOOL_BUILDIN_TYPE,
+    BYTE_BUILDIN_TYPE,
+    UBYTE_BUILDIN_TYPE,
+    SHORT_BUILDIN_TYPE,
+    USHORT_BUILDIN_TYPE,
+    INT_BUILDIN_TYPE,
+    UINT_BUILDIN_TYPE,
+    LONG_BUILDIN_TYPE,
+    ULONG_BUILDIN_TYPE,
 };
 
 struct BuildinType {
@@ -46,6 +58,13 @@ struct ArrayType {
     struct Type strong *type;
     bool sized;
     unsigned int elementCount;
+};
+
+struct FunctionType {
+    struct Type base;
+    unsigned int paramCount;
+    struct Type strong *strong *paramTypes;
+    struct Type *retType;
 };
 
 struct TupleType {

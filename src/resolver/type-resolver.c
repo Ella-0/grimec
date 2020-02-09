@@ -35,6 +35,17 @@ struct Type strong *resolveLiteralExprType(struct LiteralExpr weak *expr) {
     return ret;
 }
 
+struct Type strong *resolveBinaryExprType(struct BinaryExpr weak *expr) {
+    struct Type strong *ret;
+    switch (expr->op) {
+        case ADD_OP:
+            break;
+        default:
+            typeResolutionError("Binary Expr");
+    }
+    return ret;
+}
+
 void resolveExprType(struct Expr weak *expr) {
     switch (expr->type) {
 
