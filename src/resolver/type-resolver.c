@@ -27,7 +27,7 @@ struct Type strong *resolveLiteralExprType(struct LiteralExpr weak *expr) {
                 ret = (struct Type strong *) simpleType;
             }
             break;
-        
+
         default:
             typeResolutionError("Literal Expr");
     }
@@ -36,19 +36,20 @@ struct Type strong *resolveLiteralExprType(struct LiteralExpr weak *expr) {
 }
 
 struct Type strong *resolveBinaryExprType(struct BinaryExpr weak *expr) {
-    struct Type strong *ret;
-    switch (expr->op) {
-        case ADD_OP:
-            break;
-        default:
-            typeResolutionError("Binary Expr");
-    }
-    return ret;
+	struct Type strong *ret;
+	switch (expr->op) {
+		case SUB_OP:
+		case ADD_OP:
+				/*max(expr->);*/
+				break;
+		default:
+			typeResolutionError("Binary Expr");
+	}
+	return ret;
 }
 
 void resolveExprType(struct Expr weak *expr) {
     switch (expr->type) {
-
         case LITERAL_EXPR:
             expr->evalType = resolveLiteralExprType((struct LiteralExpr weak *) expr);
             break;
@@ -59,9 +60,9 @@ void resolveExprType(struct Expr weak *expr) {
 }
 
 void resolveTypesInModule(struct Module weak *module) {
-
+	
 }
 
 void resolveTypes(struct Module weak *module) {
-    resolveTypesInModule(module);    
+    //resolveTypesInModule(module);    
 }

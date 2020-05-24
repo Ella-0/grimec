@@ -135,7 +135,8 @@ struct Type strong *parseArrayType(struct Token const *const **tokens) {
                 ret->sized = true;
                 ret->typed = false;
                 consumeToken(tokens, SEMI_COLON_TOKEN, "';'", "Array Type");
-                struct IntToken const weak *sizeToken = (struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer", "Array Type");
+                struct IntToken const weak *sizeToken = 
+					(struct IntToken const weak *) consumeToken(tokens, INT_TOKEN, "Integer", "Array Type");
                 ret->elementCount = sizeToken->value;                  
             }
             break;

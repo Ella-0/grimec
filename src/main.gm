@@ -30,27 +30,27 @@ func main(argc: Int, argv: [[UByte]]) -> Int {
 
 	setLogLevel(1)
 
-    if (argc > 1) {
-        var fileName: [UByte] := argv[1]
+	if (argc > 1) {
+		var fileName: [UByte] := argv[1]
 
-        var source: [UByte] := readFile(fileName)
+		var source: [UByte] := readFile(fileName)
 	
-	    var tokens: [Token] := lex(source)
+		var tokens: [Token] := lex(source)
 	
-	    var tree: Module := parse(tokens)
+		var tree: Module := parse(tokens)
 	
-        resolveTypes(tree)
-
-        codeGenLLVM(tree)
+		resolveTypes(tree)
 		
-	    delModule(tree)
-
-	    delTokens(tokens)
+		codeGenLLVM(tree)
 		
-	    memFree(source)
+		delModule(tree)
 		
-	    memLog()
-        ret := 0
-    }
-    ret := 0
+		delTokens(tokens)
+		
+		memFree(source)
+		
+		memLog()
+		ret := 0
+	}
+	ret := 0
 }

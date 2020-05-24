@@ -1,0 +1,10 @@
+mod grimec::build
+
+use mod std::io
+use func std::io::println
+use func io::println
+
+
+func main() -> Int {
+	return 0
+}

@@ -8,48 +8,69 @@ grimec_main_main:                       # @grimec_main_main
 # %bb.0:                                # %entry
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	pushq	%r14
-	.cfi_def_cfa_offset 24
-	pushq	%rbx
-	.cfi_def_cfa_offset 32
-	.cfi_offset %rbx, -32
-	.cfi_offset %r14, -24
 	.cfi_offset %rbp, -16
-	movq	%rsi, %rbx
-	movl	%edi, %ebp
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r12
+	pushq	%rbx
+	subq	$32, %rsp
+	.cfi_offset %rbx, -48
+	.cfi_offset %r12, -40
+	.cfi_offset %r14, -32
+	.cfi_offset %r15, -24
+	movl	%edi, -36(%rbp)
+	movq	%rsi, -48(%rbp)
 	movl	$1, %edi
 	callq	setLogLevel
-	cmpl	$2, %ebp
+	cmpl	$2, -36(%rbp)
 	jl	.LBB0_2
 # %bb.1:                                # %ifThen
-	movq	8(%rbx), %rdi
+	movq	%rsp, %r14
+	leaq	-16(%r14), %rsp
+	movq	%rsp, %rax
+	leaq	-16(%rax), %rsp
+	movq	-48(%rbp), %rcx
+	movq	8(%rcx), %rcx
+	movq	%rcx, -16(%rax)
+	movq	%rsp, %r15
+	leaq	-16(%r15), %rsp
+	movq	-16(%rax), %rdi
 	callq	readFile
-	movq	%rax, %r14
-	movq	%rax, %rdi
+	movq	%rax, -16(%r15)
+	movq	%rsp, %r12
+	leaq	-16(%r12), %rsp
+	movq	-16(%r15), %rdi
 	callq	lex
-	movq	%rax, %rbp
-	movq	%rax, %rdi
+	movq	%rax, -16(%r12)
+	movq	%rsp, %rbx
+	leaq	-16(%rbx), %rsp
+	movq	-16(%r12), %rdi
 	callq	parse
-	movq	%rax, %rbx
+	movq	%rax, -16(%rbx)
 	movq	%rax, %rdi
 	callq	resolveTypes
-	movq	%rbx, %rdi
+	movq	-16(%rbx), %rdi
 	callq	codeGenLLVM
-	movq	%rbx, %rdi
+	movq	-16(%rbx), %rdi
 	callq	delModule
-	movq	%rbp, %rdi
+	movq	-16(%r12), %rdi
 	callq	delTokens
-	movq	%r14, %rdi
+	movq	-16(%r15), %rdi
 	callq	memFree
 	callq	memLog
+	movl	$0, -16(%r14)
 .LBB0_2:                                # %ifExit
+	movl	$0, -52(%rbp)
 	xorl	%eax, %eax
+	leaq	-32(%rbp), %rsp
 	popq	%rbx
-	.cfi_def_cfa_offset 24
+	popq	%r12
 	popq	%r14
-	.cfi_def_cfa_offset 16
+	popq	%r15
 	popq	%rbp
-	.cfi_def_cfa_offset 8
+	.cfi_def_cfa %rsp, 8
 	retq
 .Lfunc_end0:
 	.size	grimec_main_main, .Lfunc_end0-grimec_main_main
@@ -71,5 +92,4 @@ main:                                   # @main
 	.size	main, .Lfunc_end1-main
 	.cfi_endproc
                                         # -- End function
-
 	.section	".note.GNU-stack","",@progbits
