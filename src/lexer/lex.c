@@ -363,6 +363,12 @@ static struct Token strong *genMutToken(char const strong *value) {
     return (struct Token strong *) token;
 }
 
+static struct Token strong *genWhile(char const strong *value) {
+	struct WhileToken strong *token = memAlloc(sizeof(struct WhileToken));
+	token->base.type = WHILE_TOKEN;
+	token->base.raw = value;
+	return (struct Token strong *) token;
+}
 static struct Pattern PATTERNS[] = {
 	{INT_TOKEN, "", "^[0-9_]+$", &genInt},
 	{STRING_TOKEN, "", "^\"[^\"]*\"$", &genString},
@@ -391,6 +397,7 @@ static struct Pattern PATTERNS[] = {
 	{VAR_TOKEN, "", "^var$", &genVar},
 	{FOR_TOKEN, "", "^for$", &genFor},
 	{IF_TOKEN, "", "^if$", &genIf},
+	{WHILE_TOKEN, "", "^while$", &genWhile},
 	{BOOL_TOKEN, "", "^true$", &genBool},
 	{BOOL_TOKEN, "", "^false$", &genBool},
 	{SEMI_COLON_TOKEN, "", "^;$", &genSemiColon},

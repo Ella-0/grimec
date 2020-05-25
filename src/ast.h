@@ -88,7 +88,8 @@ enum ExprType {
 	CALL_EXPR,
 	METHOD_CALL_EXPR,
     IF_EXPR,
-    BLOCK_EXPR,
+	WHILE_EXPR,
+	BLOCK_EXPR,
 };
 
 struct Expr {
@@ -251,6 +252,12 @@ struct IfExpr {
 	struct Expr strong *condition;
 	struct Expr strong *ifBody;
 	struct Expr strong *elseBody;
+};
+
+struct WhileExpr {
+	struct Expr base;
+	struct Expr strong *condition;
+	struct Expr strong *body;
 };
 
 struct Func {

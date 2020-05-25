@@ -1,0 +1,9 @@
+mod test::whileTest
+
+ext def func puts({UByte}) -> Void
+
+func main(argc: Int, argv: {[UByte]}) -> Int {
+	while (true) {
+		puts("Hello, World")
+	}
+}

@@ -366,9 +366,26 @@ LLVMValueRef codeGenBlockExprLLVM(LLVMModuleRef module, LLVMValueRef functionRef
 	return ret;
 }
 
-LLVMValueRef codeGenWhileExprLLVM(LLVMModuleRef module, LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree strong *weak *funcs, struct Tree strong *weak *types, struct IfExpr weak *stmt) {
-	LLVMBasicBlockRef whilePre = LLVMAppendBasicBlock(functionRef, "whilePre");
+LLVMValueRef codeGenWhileExprLLVM(LLVMModuleRef module, LLVMValueRef functionRef, LLVMBuilderRef builder, struct TreeList *localVarSymbols, struct Tree strong *weak *funcs, struct Tree strong *weak *types, struct WhileExpr weak *stmt) {
+	//LLVMBasicBlockRef whilePre = LLVMAppendBasicBlock(functionRef, "whilePre");
 	LLVMBasicBlockRef whileCondition = LLVMAppendBasicBlock(functionRef, "whileCond");
+	LLVMBasicBlockRef whileBody = LLVMAppendBasicBlock(functionRef, "whileBody");
+	LLVMBasicBlockRef whileExit = LLVMAppendBasicBlock(functionRef, "whileExit");
+
+	LLVMBuildBr(builder, whileCondition);
+
+	LLVMPositionBuilderAtEnd(builder, whileCondition);
+	LLVMValueRef cond = codeGenExprLLVM(module, functionRef, builder, localVarSymbols, funcs, types, stmt->condition);
+
+	LLVMBuildCondBr(builder, cond, whileBody, whileExit);
+
+	LLVMPositionBuilderAtEnd(builder, whileBody);
+	LLVMValueRef body = codeGenExprLLVM(module, functionRef, builder, localVarSymbols, funcs, types, stmt->body);
+
+	LLVMBuildBr(builder, whileCondition);
+
+	LLVMPositionBuilderAtEnd(builder, whileExit);
+	
 
 	return NULL;
 }
@@ -440,6 +457,11 @@ LLVMValueRef codeGenExprLLVM(LLVMModuleRef module, LLVMValueRef functionRef, LLV
 			logMsg(LOG_INFO, 2, "Building If Statement!");
 			return codeGenIfExprLLVM(module, functionRef, builder, localVarSymbols, funcs, types, (struct IfExpr weak *) expr);
 			logMsg(LOG_INFO, 2, "Built If Statement!");
+		case WHILE_EXPR:
+			logMsg(LOG_INFO, 2, "Building While Expression!\n");
+			ret = codeGenWhileExprLLVM(module, functionRef, builder, localVarSymbols, funcs, types, (struct WhileExpr weak *) expr);
+			logMsg(LOG_INFO, 2, "Built While Expression!\n");
+			break;
 		default:
 			logMsg(LOG_ERROR, 4, "Invalid Expression Type!");
 			exit(-1);
@@ -542,7 +564,7 @@ LLVMValueRef codeGenFuncLLVM(LLVMModuleRef module, struct Tree strong *weak *loc
 	LLVMTypeRef retType = codeGenTypeLLVM(module, localTypes, func->retType);
 
 	out = LLVMAddFunction(module, name, LLVMFunctionType(retType, paramTypes, func->paramCount, false));
-	treeAdd(*localFuncs, name, out);
+	//treeAdd(*localFuncs, name, out);
 	LLVMBuilderRef builder = LLVMCreateBuilder();
 	LLVMBasicBlockRef entry = LLVMAppendBasicBlock(out, "entry");
 	LLVMPositionBuilderAtEnd(builder, entry);
@@ -626,7 +648,7 @@ LLVMValueRef codeGenFuncDef(LLVMModuleRef module, struct Tree **localFuncs, stru
 	LLVMTypeRef retType = codeGenTypeLLVM(module, localTypes, funcDef->func->retType);
 
 	out = LLVMAddFunction(module, name, LLVMFunctionType(retType, paramTypes, funcDef->func->paramCount, false));
-	*localFuncs = treeAdd(*localFuncs, name, out);
+	*localFuncs = treeAdd(*localFuncs, heapString(name), out);
 
 	*localFuncs = treeAdd(*localFuncs, heapString(funcDef->func->name), out);
 	return out;
@@ -676,7 +698,7 @@ LLVMTypeRef codeGenTypeAliasLLVM(LLVMModuleRef module, struct Tree strong *weak 
     } else {
         ret = codeGenTypeLLVM(module, localTypes, typeAlias->type);
     }
-    *localTypes = treeAdd(*localTypes, typeAlias->name, ret);
+    *localTypes = treeAdd(*localTypes, heapString(typeAlias->name), ret);
     return ret;
 }
 

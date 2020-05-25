@@ -1,0 +1,6 @@
+mod test::traitTest
+
+func main() -> Int {
+
+
+}

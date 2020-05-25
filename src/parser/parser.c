@@ -657,6 +657,24 @@ struct Expr strong *parseIfExpr(struct Token const weak *const weak *weak *token
 	return (struct Expr strong *) ret;
 }
 
+struct Expr strong *parseWhileExpr(struct Token const *const **tokens) {
+	logMsg(LOG_INFO, 2, "Parsing While Expr");
+	struct WhileExpr strong *ret = (struct WhileExpr strong *) memAlloc(sizeof(struct WhileExpr));
+	ret->base.type = WHILE_EXPR;
+
+	consumeToken(tokens, WHILE_TOKEN, "'while'", "While Expr");
+
+	consumeToken(tokens, L_PAREN_TOKEN, "'('", "While Expr");
+
+	ret->condition = parseExpr(tokens);
+
+	consumeToken(tokens, R_PAREN_TOKEN, "')'", "While Expr");
+
+	ret->body = parseExpr(tokens);
+
+	return (struct Expr strong *) ret;
+}
+
 struct Expr strong *parseBlockExpr(struct Token const *const **tokens) {
 	logMsg(LOG_INFO, 2, "Parsing Block Stmt");
 	struct BlockExpr strong *out = (struct BlockExpr strong *) memAlloc(sizeof(struct BlockExpr));
@@ -685,7 +703,10 @@ struct Expr strong *parseControlFlowExpr(struct Token const strong *const strong
         case IF_TOKEN:
             ret = parseIfExpr(tokens);            
             break;
-        case L_BRACE_TOKEN:
+		case WHILE_TOKEN:
+			ret = parseWhileExpr(tokens);
+			break;
+		case L_BRACE_TOKEN:
             ret = parseBlockExpr(tokens);
             break;
         default:
