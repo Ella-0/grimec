@@ -16,7 +16,15 @@ $ make
 
 ## Usage
 
-```grimec <file>```
+```
+grimec <file> | clang -x ir -
+```
 
-This will output LLVM-IR for the grime file passed to the compiler. To turn this into an executable you can do the following
-```grimec <file> | llc | cc -x assembler -``` This will output an executable named `a.out`
+## TODO
+ - lexer is fundamentally broken and needs a total rewrite (most likely use FSM)
+ - restructure semantic stage
+ - add custom ir
+ - change syntax
+ - change build system to a single POSIX Makefile and a Ninja file or write a
+   very short configure POSIX shell script to generate one of your choice
+   `./configure --ninja` or `./configure --make`
