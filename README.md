@@ -7,15 +7,31 @@ The new static compiler for the grime programming language.
  * LLVM
 #### Make
  * CMake
+```sh
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
 ```
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
+## Getting Started
+### Hello, World
+```grime
+mod test::helloworld
+
+ext def func puts([UByte]) -> Int
+
+func main(argc: Int, argv: [[UByte]]) -> Int {
+	var greeting: [UByte] := "Hello, World!"
+	puts(greeting)
+	ret := 0
+}
 ```
+### Usage
 
-## Usage
-
+```sh
+grimec helloworld.gm | clang -x ir
+./a.out
+```
 ```
 grimec <file> | clang -x ir -
 ```
