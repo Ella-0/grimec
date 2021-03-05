@@ -14,7 +14,9 @@ cmake -G Ninja ..
 ninja
 ```
 ## Getting Started
+
 ### Hello, World
+This is the old syntax and what the compiler can currently handle
 ```grime
 mod test::helloworld
 
@@ -25,6 +27,16 @@ func main(argc: Int, argv: [[UByte]]) -> Int {
 	puts(greeting)
 	ret := 0
 }
+```
+The new syntax that needs to be implemented
+```grime
+mod!("test::helloworld")
+
+fn main(env: std::Env) -> Result!((),NotZero!(u32)) {
+	env.stdout.println("Hello, World!");
+	Ok(())
+}
+
 ```
 ### Usage
 
